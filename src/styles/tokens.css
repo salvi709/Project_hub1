@@ -1,0 +1,48 @@
+/* ProjectHub Design Tokens — Obsidian Green (Default Dark) + Theme-Ready Light */
+
+:root {
+  --ph-bg-primary: #fafafa;
+  --ph-bg-surface: #ffffff;
+  --ph-bg-elevated: #f3f4f6;
+  --ph-bg-subtle: #f4f5f6;
+
+  --ph-border: #e5e7eb;
+  --ph-border-hover: #d1d5db;
+
+  --ph-text-primary: #090a0b;
+  --ph-text-secondary: #4b5563;
+  --ph-text-muted: #6b7280;
+
+  --ph-accent: #059669;
+  --ph-accent-hover: #047857;
+  --ph-accent-foreground: #ffffff;
+  --ph-accent-soft: rgba(5, 150, 105, 0.09);
+
+  --ph-status-success: #059669;
+  --ph-status-warning: #d97706;
+  --ph-status-danger: #dc2626;
+}
+
+.dark {
+  /* Obsidian Green */
+  --ph-bg-primary: #050505;
+  --ph-bg-surface: #0a0b0c;
+  --ph-bg-elevated: #111316;
+  --ph-bg-subtle: #0e1012;
+
+  --ph-border: #1a1d22;
+  --ph-border-hover: #272c34;
+
+  --ph-text-primary: #f4f5f6;
+  --ph-text-secondary: #9ca3af;
+  --ph-text-muted: #6b7280;
+
+  --ph-accent: #10b981;
+  --ph-accent-hover: #059669;
+  --ph-accent-foreground: #03150e;
+  --ph-accent-soft: rgba(16, 185, 129, 0.11);
+
+  --ph-status-success: #10b981;
+  --ph-status-warning: #d97706;
+  --ph-status-danger: #dc2626;
+}

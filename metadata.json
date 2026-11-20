@@ -1,0 +1,6 @@
+{
+  "name": "ProjectHub",
+  "description": "A centralized personal project management and productivity workspace for projects, tasks, deadlines, GitHub repositories, notes, and analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
