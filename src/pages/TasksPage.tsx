@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Check, CheckSquare, Circle, Info, Plus, Search } from 'lucide-react';
+import { Check, CheckSquare, Circle, Info, Plus, RotateCcw, Search } from 'lucide-react';
 import { SAMPLE_TASKS } from '../features/tasks/sampleTasks';
-import type { TaskStatus } from '../types/database';
+import type { PriorityLevel, TaskStatus } from '../types/database';
 import type { SampleTask } from '../types/domain';
 import { cn } from '../lib/utils';
 import { formatShortDate } from '../utils/formatters';
@@ -12,6 +12,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Input';
 
 type StatusFilter = 'all' | TaskStatus;
+type PriorityFilter = 'all' | PriorityLevel;
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All Tasks' },
@@ -19,6 +20,14 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'in_progress', label: 'In Progress' },
   { value: 'review', label: 'Review' },
   { value: 'done', label: 'Done' },
+];
+
+const PRIORITY_FILTERS: { value: PriorityFilter; label: string }[] = [
+  { value: 'all', label: 'All Priorities' },
+  { value: 'urgent', label: 'Urgent' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
 ];
 
 const STATUS_TEXT: Record<TaskStatus, { label: string; className: string }> = {
@@ -32,8 +41,14 @@ const STATUS_TEXT: Record<TaskStatus, { label: string; className: string }> = {
 export const TasksPage: React.FC = () => {
   const [tasks, setTasks] = useState<SampleTask[]>(SAMPLE_TASKS);
   const [filter, setFilter] = useState<StatusFilter>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [search, setSearch] = useState('');
   const [phaseNoticeOpen, setPhaseNoticeOpen] = useState(false);
+
+  const isModified = useMemo(
+    () => tasks.some((task, idx) => task.status !== SAMPLE_TASKS[idx]?.status),
+    [tasks]
+  );
 
   const toggleTask = (id: string) => {
     setTasks((prev) =>
@@ -43,17 +58,22 @@ export const TasksPage: React.FC = () => {
     );
   };
 
+  const resetPreview = () => {
+    setTasks(SAMPLE_TASKS);
+  };
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return tasks.filter((task) => {
       const matchesFilter = filter === 'all' || task.status === filter;
+      const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
       const matchesSearch =
         !q ||
         task.title.toLowerCase().includes(q) ||
         task.projectName.toLowerCase().includes(q);
-      return matchesFilter && matchesSearch;
+      return matchesFilter && matchesPriority && matchesSearch;
     });
-  }, [tasks, filter, search]);
+  }, [tasks, filter, priorityFilter, search]);
 
   return (
     <div className="space-y-6">
@@ -68,32 +88,55 @@ export const TasksPage: React.FC = () => {
           </p>
         </div>
 
-        <Button size="sm" onClick={() => setPhaseNoticeOpen(true)}>
-          <Plus className="h-4 w-4" />
-          <span>Add Task</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {isModified && (
+            <Button variant="outline" size="sm" onClick={resetPreview}>
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Reset Preview</span>
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setPhaseNoticeOpen(true)}>
+            <Plus className="h-4 w-4" />
+            <span>Add Task</span>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-1">
-          {STATUS_FILTERS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setFilter(item.value)}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
-                filter === item.value
-                  ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
-                  : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-1">
+            {STATUS_FILTERS.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                onClick={() => setFilter(item.value)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
+                  filter === item.value
+                    ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
+                    : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <select
+            aria-label="Filter by priority"
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
+            className="h-9 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] px-3 text-xs text-[var(--ph-text-secondary)] focus:border-[var(--ph-accent)] focus:outline-none cursor-pointer"
+          >
+            {PRIORITY_FILTERS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="relative w-full sm:w-64">
+        <div className="relative w-full lg:w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ph-text-muted)]" />
           <Input
             value={search}
@@ -108,13 +151,14 @@ export const TasksPage: React.FC = () => {
         <EmptyState
           icon={<CheckSquare className="h-5 w-5" />}
           title="No sample tasks match this filter"
-          description="Adjust your status selection or search query to inspect other preview items."
+          description="Adjust your status, priority, or search query to inspect other preview items."
           action={
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 setFilter('all');
+                setPriorityFilter('all');
                 setSearch('');
               }}
             >

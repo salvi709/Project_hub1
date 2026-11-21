@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar as CalendarIcon, Info } from 'lucide-react';
 import { SAMPLE_TASKS } from '../features/tasks/sampleTasks';
 import { cn } from '../lib/utils';
@@ -11,6 +11,8 @@ const NOVEMBER_2026_LEADING_BLANKS = 6;
 const NOVEMBER_2026_DAYS = Array.from({ length: 30 }, (_, i) => i + 1);
 
 export const CalendarPage: React.FC = () => {
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
   const taskDates = new Map<number, typeof SAMPLE_TASKS>();
   SAMPLE_TASKS.forEach((task) => {
     const day = Number(task.dueDate.split('-')[2]);
@@ -21,6 +23,9 @@ export const CalendarPage: React.FC = () => {
     }
   });
 
+  const visibleMilestones =
+    selectedDay !== null ? taskDates.get(selectedDay) ?? [] : SAMPLE_TASKS;
+
   return (
     <div className="space-y-6">
       <div className="border-b border-[var(--ph-border)] pb-5">
@@ -29,7 +34,9 @@ export const CalendarPage: React.FC = () => {
         </h2>
         <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ph-text-secondary)]">
           <Info className="h-3.5 w-3.5 text-[var(--ph-accent)] shrink-0" />
-          <span>Phase 1 calendar layout preview displaying sample November 2026 milestones</span>
+          <span>
+            Phase 1 calendar layout preview · Select any day to inspect scheduled sample milestones
+          </span>
         </p>
       </div>
 
@@ -61,26 +68,30 @@ export const CalendarPage: React.FC = () => {
               {NOVEMBER_2026_DAYS.map((day) => {
                 const dayTasks = taskDates.get(day) ?? [];
                 const isToday = day === 20;
+                const isSelected = selectedDay === day;
 
                 return (
-                  <div
+                  <button
                     key={day}
+                    type="button"
+                    onClick={() => setSelectedDay((prev) => (prev === day ? null : day))}
                     className={cn(
-                      'min-h-[78px] bg-[var(--ph-bg-surface)] p-2 flex flex-col justify-between',
-                      isToday && 'bg-[var(--ph-accent-soft)]'
+                      'min-h-[78px] bg-[var(--ph-bg-surface)] p-2 flex flex-col justify-between text-left transition-colors hover:bg-[var(--ph-bg-elevated)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ph-accent)] cursor-pointer',
+                      isToday && 'bg-[var(--ph-accent-soft)]',
+                      isSelected && 'ring-1 ring-inset ring-[var(--ph-accent)] bg-[var(--ph-accent-soft)]'
                     )}
                   >
                     <span
                       className={cn(
                         'font-mono text-xs tabular-nums',
-                        isToday
+                        isToday || isSelected
                           ? 'font-semibold text-[var(--ph-accent)]'
                           : 'text-[var(--ph-text-secondary)]'
                       )}
                     >
                       {day}
                     </span>
-                    <div className="mt-1 space-y-1">
+                    <div className="mt-1 space-y-1 w-full">
                       {dayTasks.map((t) => (
                         <div
                           key={t.id}
@@ -91,7 +102,7 @@ export const CalendarPage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -101,26 +112,50 @@ export const CalendarPage: React.FC = () => {
         <Card className="xl:col-span-4">
           <CardHeader>
             <div>
-              <CardTitle>Upcoming Milestones</CardTitle>
-              <CardDescription className="mt-0.5">Sample scheduled due dates</CardDescription>
+              <CardTitle>
+                {selectedDay !== null ? `Nov ${selectedDay}, 2026` : 'Upcoming Milestones'}
+              </CardTitle>
+              <CardDescription className="mt-0.5">
+                {selectedDay !== null
+                  ? 'Scheduled sample items for selected date'
+                  : 'Sample scheduled due dates'}
+              </CardDescription>
             </div>
+            {selectedDay !== null && (
+              <button
+                type="button"
+                onClick={() => setSelectedDay(null)}
+                className="text-xs font-medium text-[var(--ph-accent)] hover:underline cursor-pointer shrink-0"
+              >
+                Show all
+              </button>
+            )}
           </CardHeader>
           <CardContent className="divide-y divide-[var(--ph-border)]">
-            {SAMPLE_TASKS.map((task) => (
-              <div key={task.id} className="flex items-start justify-between gap-3 py-3 first:pt-1 last:pb-0">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-[var(--ph-text-primary)] truncate">
-                    {task.title}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
-                    {task.projectName}
-                  </p>
+            {visibleMilestones.length === 0 ? (
+              <p className="py-6 text-xs text-[var(--ph-text-muted)]">
+                No sample milestones scheduled for Nov {selectedDay}.
+              </p>
+            ) : (
+              visibleMilestones.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-start justify-between gap-3 py-3 first:pt-1 last:pb-0"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-[var(--ph-text-primary)] truncate">
+                      {task.title}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
+                      {task.projectName}
+                    </p>
+                  </div>
+                  <span className="font-mono text-xs text-[var(--ph-accent)] shrink-0 tabular-nums">
+                    {formatShortDate(task.dueDate)}
+                  </span>
                 </div>
-                <span className="font-mono text-xs text-[var(--ph-accent)] shrink-0 tabular-nums">
-                  {formatShortDate(task.dueDate)}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

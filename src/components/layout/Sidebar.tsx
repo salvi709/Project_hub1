@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { motion } from 'motion/react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,6 +14,8 @@ import {
   X,
 } from 'lucide-react';
 import { NAVIGATION_ITEMS } from '../../types/navigation';
+import { SAMPLE_PROJECTS } from '../../features/projects/sampleProjects';
+import { SAMPLE_TASKS } from '../../features/tasks/sampleTasks';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
@@ -41,6 +44,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const resourceItems = NAVIGATION_ITEMS.filter((i) => i.section === 'resources');
   const systemItems = NAVIGATION_ITEMS.filter((i) => i.section === 'system');
 
+  const navCounts: Record<string, number | undefined> = {
+    projects: SAMPLE_PROJECTS.length,
+    tasks: SAMPLE_TASKS.filter((t) => t.status !== 'done').length,
+  };
+
   const handleSignOut = async () => {
     await signOut();
     onCloseMobile();
@@ -52,27 +60,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {!collapsed && (
         <div className="px-3 pb-1 text-xs font-medium text-[var(--ph-text-muted)]">{title}</div>
       )}
-      {items.map((item) => (
-        <NavLink
-          key={item.id}
-          to={item.path}
-          end={item.path === '/'}
-          onClick={onCloseMobile}
-          title={collapsed ? item.label : undefined}
-          className={({ isActive }) =>
-            cn(
-              'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)]',
-              collapsed && 'justify-center px-2',
-              isActive
-                ? 'bg-[var(--ph-accent-soft)] text-[var(--ph-accent)]'
-                : 'text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-elevated)] hover:text-[var(--ph-text-primary)]'
-            )
-          }
-        >
-          <NavIcon name={item.iconName} className="h-4 w-4 shrink-0" />
-          {!collapsed && <span className="truncate">{item.label}</span>}
-        </NavLink>
-      ))}
+      {items.map((item) => {
+        const count = navCounts[item.id];
+        return (
+          <NavLink
+            key={item.id}
+            to={item.path}
+            end={item.path === '/'}
+            onClick={onCloseMobile}
+            title={collapsed ? item.label : undefined}
+            className={({ isActive }) =>
+              cn(
+                'relative group flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)]',
+                collapsed && 'justify-center px-2',
+                isActive
+                  ? 'bg-[var(--ph-accent-soft)] text-[var(--ph-accent)]'
+                  : 'text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-elevated)] hover:text-[var(--ph-text-primary)]'
+              )
+            }
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && !collapsed && (
+                  <motion.span
+                    layoutId="sidebar-active-indicator"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-r bg-[var(--ph-accent)]"
+                  />
+                )}
+                <span className="flex items-center gap-3 min-w-0">
+                  <NavIcon name={item.iconName} className="h-4 w-4 shrink-0" />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </span>
+                {!collapsed && count !== undefined && (
+                  <span
+                    className={cn(
+                      'font-mono text-[11px] tabular-nums shrink-0',
+                      isActive ? 'text-[var(--ph-accent)]' : 'text-[var(--ph-text-muted)]'
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+        );
+      })}
     </div>
   );
 

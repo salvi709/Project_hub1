@@ -2,8 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { FolderKanban, GitBranch, Info, Plus, Search } from 'lucide-react';
 import { SAMPLE_PROJECTS } from '../features/projects/sampleProjects';
 import type { ProjectStatus } from '../types/database';
+import type { SampleProject } from '../types/domain';
 import { cn } from '../lib/utils';
 import { formatPercentage, formatShortDate } from '../utils/formatters';
+import { ProjectPreviewDialog } from '../components/projects/ProjectPreviewDialog';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../components/ui/Dialog';
@@ -32,6 +34,7 @@ export const ProjectsPage: React.FC = () => {
   const [filter, setFilter] = useState<FilterValue>('all');
   const [search, setSearch] = useState('');
   const [phaseNoticeOpen, setPhaseNoticeOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<SampleProject | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -56,7 +59,9 @@ export const ProjectsPage: React.FC = () => {
           </h2>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ph-text-secondary)]">
             <Info className="h-3.5 w-3.5 text-[var(--ph-accent)] shrink-0" />
-            <span>Sample preview records · Supabase CRUD persistence arrives in Phase 2</span>
+            <span>
+              Sample preview records · Click any card to inspect linked tasks (Supabase CRUD in Phase 2)
+            </span>
           </p>
         </div>
 
@@ -122,7 +127,19 @@ export const ProjectsPage: React.FC = () => {
             const pct = formatPercentage(project.tasksCompleted, project.tasksTotal);
             const status = STATUS_META[project.status];
             return (
-              <Card key={project.id} className="flex flex-col justify-between p-5 hover:border-[var(--ph-border-hover)]">
+              <Card
+                key={project.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedProject(project)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedProject(project);
+                  }
+                }}
+                className="flex flex-col justify-between p-5 cursor-pointer hover:border-[var(--ph-border-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)]"
+              >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="font-display text-base font-semibold text-[var(--ph-text-primary)]">
@@ -170,6 +187,11 @@ export const ProjectsPage: React.FC = () => {
           })}
         </div>
       )}
+
+      <ProjectPreviewDialog
+        project={selectedProject}
+        onOpenChange={(open) => !open && setSelectedProject(null)}
+      />
 
       <Dialog open={phaseNoticeOpen} onOpenChange={setPhaseNoticeOpen}>
         <DialogContent>

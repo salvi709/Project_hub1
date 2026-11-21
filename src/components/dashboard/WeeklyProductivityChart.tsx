@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import type { SampleProductivityDay } from '../../types/domain';
 import { cn } from '../../lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
@@ -17,8 +18,10 @@ export const WeeklyProductivityChart: React.FC<WeeklyProductivityChartProps> = (
   const totalCompleted = data.reduce((acc, d) => acc + d.completed, 0);
   const totalPlanned = data.reduce((acc, d) => acc + d.planned, 0);
   const totalHours = data.reduce((acc, d) => acc + d.focusHours, 0);
+  const planRate = Math.round((totalCompleted / Math.max(totalPlanned, 1)) * 100);
 
   const activeDay = hoveredIndex !== null ? data[hoveredIndex] : null;
+  const gridSteps = [0.25, 0.5, 0.75, 1];
 
   return (
     <Card>
@@ -26,7 +29,7 @@ export const WeeklyProductivityChart: React.FC<WeeklyProductivityChartProps> = (
         <div>
           <CardTitle>Weekly Productivity</CardTitle>
           <CardDescription className="mt-0.5">
-            Sample placeholder chart · Hover bars to inspect daily cadence
+            Sample placeholder chart · Hover columns to inspect daily cadence
           </CardDescription>
         </div>
 
@@ -61,13 +64,22 @@ export const WeeklyProductivityChart: React.FC<WeeklyProductivityChartProps> = (
       <CardContent>
         {/* Summary strip */}
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-4 border-b border-[var(--ph-border)] pb-4">
-          <div className="flex items-baseline gap-6">
+          <div className="flex flex-wrap items-baseline gap-6">
             <div>
               <div className="text-xs text-[var(--ph-text-muted)]">
                 {metric === 'tasks' ? 'Completed this week' : 'Focused this week'}
               </div>
-              <div className="mt-0.5 font-display text-2xl font-semibold text-[var(--ph-text-primary)] tabular-nums">
-                {metric === 'tasks' ? `${totalCompleted} / ${totalPlanned}` : `${totalHours.toFixed(1)} hrs`}
+              <div className="mt-0.5 flex items-baseline gap-2.5">
+                <span className="font-display text-2xl font-semibold text-[var(--ph-text-primary)] tabular-nums">
+                  {metric === 'tasks'
+                    ? `${totalCompleted} / ${totalPlanned}`
+                    : `${totalHours.toFixed(1)} hrs`}
+                </span>
+                {metric === 'tasks' && (
+                  <span className="font-mono text-xs text-[var(--ph-accent)] tabular-nums">
+                    {planRate}% hit rate
+                  </span>
+                )}
               </div>
             </div>
 
@@ -99,49 +111,72 @@ export const WeeklyProductivityChart: React.FC<WeeklyProductivityChartProps> = (
           </div>
         </div>
 
-        {/* Bar Chart */}
-        <div className="grid grid-cols-7 gap-2 sm:gap-3 pt-2" role="img" aria-label="Weekly productivity sample bar chart">
-          {data.map((day, idx) => {
-            const completedHeight =
-              metric === 'tasks'
-                ? Math.round((day.completed / maxTasks) * 140)
-                : Math.round((day.focusHours / maxHours) * 140);
-            const plannedHeight = Math.round((day.planned / maxTasks) * 140);
-            const isHovered = hoveredIndex === idx;
-
-            return (
+        {/* Chart Area with Subtle Horizontal Gridlines */}
+        <div className="relative pt-2" role="img" aria-label="Weekly productivity sample bar chart">
+          <div className="pointer-events-none absolute inset-x-0 top-2 h-[152px] flex flex-col justify-between">
+            {gridSteps.map((step) => (
               <div
-                key={day.day}
-                onMouseEnter={() => setHoveredIndex(idx)}
-                onMouseLeave={() => setHoveredIndex(null)}
-                className="flex flex-col items-center gap-2 group"
-              >
-                <div className="flex h-[152px] w-full items-end justify-center gap-1 rounded-lg px-1 pt-2 transition-colors group-hover:bg-[var(--ph-bg-elevated)]/40">
-                  {metric === 'tasks' && (
-                    <div
-                      className="w-2.5 sm:w-3 rounded-t-sm border border-[var(--ph-border-hover)] bg-[var(--ph-bg-elevated)] transition-all duration-200"
-                      style={{ height: `${Math.max(plannedHeight, 6)}px` }}
-                    />
-                  )}
-                  <div
-                    className={cn(
-                      'w-3 sm:w-4 rounded-t-sm transition-all duration-200',
-                      isHovered ? 'bg-emerald-400' : 'bg-[var(--ph-accent)]'
+                key={step}
+                className="w-full border-b border-dashed border-[var(--ph-border)]/70"
+              />
+            ))}
+          </div>
+
+          <div className="relative z-10 grid grid-cols-7 gap-2 sm:gap-3">
+            {data.map((day, idx) => {
+              const completedHeight =
+                metric === 'tasks'
+                  ? Math.round((day.completed / maxTasks) * 140)
+                  : Math.round((day.focusHours / maxHours) * 140);
+              const plannedHeight = Math.round((day.planned / maxTasks) * 140);
+              const isHovered = hoveredIndex === idx;
+              const isToday = idx === data.length - 1;
+
+              return (
+                <div
+                  key={day.day}
+                  onMouseEnter={() => setHoveredIndex(idx)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  className="flex flex-col items-center gap-2 group cursor-default"
+                >
+                  <div className="flex h-[152px] w-full items-end justify-center gap-1 rounded-lg px-1 pt-2 transition-colors group-hover:bg-[var(--ph-bg-elevated)]/40">
+                    {metric === 'tasks' && (
+                      <motion.div
+                        initial={false}
+                        animate={{ height: Math.max(plannedHeight, 6) }}
+                        transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-2.5 sm:w-3 rounded-t-sm border border-[var(--ph-border-hover)] bg-[var(--ph-bg-elevated)]"
+                      />
                     )}
-                    style={{ height: `${Math.max(completedHeight, 6)}px` }}
-                  />
-                </div>
-                <div className="text-center">
-                  <div className="text-xs font-medium text-[var(--ph-text-secondary)]">
-                    {day.day}
+                    <motion.div
+                      initial={false}
+                      animate={{ height: Math.max(completedHeight, 6) }}
+                      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                      className={cn(
+                        'w-3 sm:w-4 rounded-t-sm transition-colors duration-150',
+                        isHovered ? 'bg-emerald-400' : 'bg-[var(--ph-accent)]'
+                      )}
+                    />
                   </div>
-                  <div className="font-mono text-[10px] text-[var(--ph-text-muted)] tabular-nums">
-                    {metric === 'tasks' ? day.completed : `${day.focusHours}h`}
+                  <div className="text-center">
+                    <div
+                      className={cn(
+                        'text-xs font-medium',
+                        isToday
+                          ? 'text-[var(--ph-accent)]'
+                          : 'text-[var(--ph-text-secondary)]'
+                      )}
+                    >
+                      {day.day}
+                    </div>
+                    <div className="font-mono text-[10px] text-[var(--ph-text-muted)] tabular-nums">
+                      {metric === 'tasks' ? day.completed : `${day.focusHours}h`}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </CardContent>
     </Card>
