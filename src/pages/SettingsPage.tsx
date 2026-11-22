@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { CheckCircle2, Database, Monitor, Moon, ShieldAlert, Smartphone, Sun } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import {
+  CheckCircle2,
+  Database,
+  Keyboard,
+  Monitor,
+  Moon,
+  ShieldAlert,
+  Smartphone,
+  Sun,
+} from 'lucide-react';
 import { useAuth } from '../features/auth/AuthContext';
 import { useTheme } from '../hooks/useTheme';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
@@ -12,6 +21,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Input } from '../components/ui/Input';
 import { PWAInstallButton } from '../components/layout/PWAInstallButton';
 
+const KEYBOARD_SHORTCUTS = [
+  { keys: '⌘K / Ctrl+K', description: 'Open workspace command palette' },
+  { keys: '↑ / ↓', description: 'Move selection across search results' },
+  { keys: 'Enter', description: 'Navigate to highlighted route or section' },
+  { keys: 'Esc', description: 'Close active dialog or command palette' },
+];
+
+const PREPARED_TABLES = [
+  { name: 'public.profiles', scope: 'User identity & preferences (RLS enabled)' },
+  { name: 'public.workspaces', scope: 'Personal & future shared workspaces (RLS enabled)' },
+  { name: 'public.workspace_members', scope: 'Role-based membership foundation (RLS enabled)' },
+  { name: 'public.projects', scope: 'Project records & GitHub repo reference (RLS enabled)' },
+  { name: 'public.tasks', scope: 'Task status, priority & deadlines (RLS enabled)' },
+  { name: 'public.subtasks', scope: 'Ordered task checklists (RLS enabled)' },
+];
+
 export const SettingsPage: React.FC = () => {
   const { theme, setTheme } = useTheme();
   const { user, profile, isSupabaseConfigured, displayName, displayEmail, refreshProfile } =
@@ -22,6 +47,13 @@ export const SettingsPage: React.FC = () => {
   const [roleTitle, setRoleTitle] = useState(profile?.role_title ?? 'Builder');
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name ?? '');
+      setRoleTitle(profile.role_title ?? 'Builder');
+    }
+  }, [profile]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +139,7 @@ export const SettingsPage: React.FC = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {isSupabaseConfigured ? (
-            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3.5 text-xs text-emerald-300">
+            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3.5 text-xs text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p className="font-medium">Supabase environment variables detected</p>
@@ -118,9 +150,9 @@ export const SettingsPage: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-[var(--ph-text-secondary)]">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               <div className="space-y-1">
-                <p className="font-medium text-amber-300">
+                <p className="font-medium text-amber-700 dark:text-amber-300">
                   Supabase Not Configured (UI Preview Mode)
                 </p>
                 <ul className="list-disc pl-4 space-y-0.5">
@@ -183,6 +215,55 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Database Migrations Readiness + Keyboard Shortcuts */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Prepared Database Schema</CardTitle>
+              <CardDescription className="mt-0.5">
+                Defined in <code className="font-mono text-[11px]">supabase/migrations/</code>
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="divide-y divide-[var(--ph-border)]">
+            {PREPARED_TABLES.map((tbl) => (
+              <div key={tbl.name} className="py-2.5 first:pt-0 last:pb-0">
+                <p className="font-mono text-xs font-medium text-[var(--ph-text-primary)]">
+                  {tbl.name}
+                </p>
+                <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">{tbl.scope}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Keyboard Shortcuts</CardTitle>
+              <CardDescription className="mt-0.5">
+                Quick navigation across the workspace
+              </CardDescription>
+            </div>
+            <Keyboard className="h-4 w-4 text-[var(--ph-text-muted)]" />
+          </CardHeader>
+          <CardContent className="divide-y divide-[var(--ph-border)]">
+            {KEYBOARD_SHORTCUTS.map((item) => (
+              <div
+                key={item.keys}
+                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0 text-xs"
+              >
+                <span className="text-[var(--ph-text-secondary)]">{item.description}</span>
+                <kbd className="rounded border border-[var(--ph-border)] bg-[var(--ph-bg-elevated)] px-2 py-0.5 font-mono text-[11px] text-[var(--ph-text-primary)] shrink-0">
+                  {item.keys}
+                </kbd>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* PWA & Offline Shell Status */}
       <Card>
         <CardHeader>
@@ -198,7 +279,13 @@ export const SettingsPage: React.FC = () => {
           <div className="space-y-1 text-xs text-[var(--ph-text-secondary)]">
             <p>
               Network status:{' '}
-              <span className={isOnline ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium'}>
+              <span
+                className={
+                  isOnline
+                    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                    : 'text-amber-600 dark:text-amber-400 font-medium'
+                }
+              >
                 {isOnline ? 'Online' : 'Offline (cached shell active)'}
               </span>
             </p>

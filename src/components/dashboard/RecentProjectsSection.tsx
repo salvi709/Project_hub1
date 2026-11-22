@@ -11,10 +11,10 @@ interface RecentProjectsSectionProps {
 }
 
 const STATUS_LABEL: Record<SampleProject['status'], { text: string; colorClass: string }> = {
-  active: { text: 'Active', colorClass: 'text-emerald-400' },
+  active: { text: 'Active', colorClass: 'text-emerald-600 dark:text-emerald-400' },
   planning: { text: 'Planning', colorClass: 'text-[var(--ph-text-secondary)]' },
-  on_hold: { text: 'On Hold', colorClass: 'text-amber-400' },
-  completed: { text: 'Completed', colorClass: 'text-emerald-300' },
+  on_hold: { text: 'On Hold', colorClass: 'text-amber-600 dark:text-amber-400' },
+  completed: { text: 'Completed', colorClass: 'text-emerald-700 dark:text-emerald-300' },
   archived: { text: 'Archived', colorClass: 'text-[var(--ph-text-muted)]' },
 };
 

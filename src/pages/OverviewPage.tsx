@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { KpiStrip } from '../components/dashboard/KpiStrip';
 import { RecentActivitySection } from '../components/dashboard/RecentActivitySection';
 import { RecentProjectsSection } from '../components/dashboard/RecentProjectsSection';
@@ -16,6 +16,11 @@ import type { SampleTask } from '../types/domain';
 export const OverviewPage: React.FC = () => {
   const [tasks, setTasks] = useState<SampleTask[]>(SAMPLE_TASKS);
 
+  const isModified = useMemo(
+    () => tasks.some((t, idx) => t.status !== SAMPLE_TASKS[idx]?.status),
+    [tasks]
+  );
+
   const toggleTask = (taskId: string) => {
     setTasks((prev) =>
       prev.map((task) =>
@@ -25,6 +30,8 @@ export const OverviewPage: React.FC = () => {
       )
     );
   };
+
+  const resetTasks = () => setTasks(SAMPLE_TASKS);
 
   const totalProjects = SAMPLE_PROJECTS.length;
   const activeProjects = SAMPLE_PROJECTS.filter((p) => p.status === 'active').length;
@@ -49,7 +56,12 @@ export const OverviewPage: React.FC = () => {
         </div>
 
         <div className="space-y-6 xl:col-span-5">
-          <UpcomingTasksSection tasks={tasks} onToggleTask={toggleTask} />
+          <UpcomingTasksSection
+            tasks={tasks}
+            onToggleTask={toggleTask}
+            isModified={isModified}
+            onResetTasks={resetTasks}
+          />
           <RecentActivitySection items={SAMPLE_ACTIVITY} />
         </div>
       </div>

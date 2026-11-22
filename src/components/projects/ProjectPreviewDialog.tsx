@@ -13,10 +13,10 @@ interface ProjectPreviewDialogProps {
 }
 
 const STATUS_META: Record<SampleProject['status'], { label: string; className: string }> = {
-  active: { label: 'Active', className: 'text-emerald-400' },
+  active: { label: 'Active', className: 'text-emerald-600 dark:text-emerald-400' },
   planning: { label: 'Planning', className: 'text-[var(--ph-text-secondary)]' },
-  on_hold: { label: 'On Hold', className: 'text-amber-400' },
-  completed: { label: 'Completed', className: 'text-emerald-300' },
+  on_hold: { label: 'On Hold', className: 'text-amber-600 dark:text-amber-400' },
+  completed: { label: 'Completed', className: 'text-emerald-700 dark:text-emerald-300' },
   archived: { label: 'Archived', className: 'text-[var(--ph-text-muted)]' },
 };
 

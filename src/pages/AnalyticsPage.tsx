@@ -48,7 +48,7 @@ export const AnalyticsPage: React.FC = () => {
 
         <Card className="p-5">
           <span className="text-xs text-[var(--ph-text-secondary)]">Analytics Backend</span>
-          <div className="mt-3 font-display text-xl font-semibold text-amber-400">
+          <div className="mt-3 font-display text-xl font-semibold text-amber-600 dark:text-amber-400">
             Phase 2+ Scope
           </div>
           <p className="mt-1.5 text-xs text-[var(--ph-text-muted)]">

@@ -92,9 +92,11 @@ export const AuthForm: React.FC = () => {
       {!isSupabaseConfigured ? (
         <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-[var(--ph-text-secondary)]">
           <div className="flex items-start gap-2.5">
-            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <div className="space-y-1">
-              <p className="font-medium text-amber-300">Supabase credentials not configured</p>
+              <p className="font-medium text-amber-700 dark:text-amber-300">
+                Supabase credentials not configured
+              </p>
               <p className="leading-relaxed">
                 Authentication is prepared in code, but {env.validationIssues.join(' ')} Supply valid
                 credentials in <code className="font-mono text-[11px]">.env</code> to test live sign-in.
@@ -103,7 +105,7 @@ export const AuthForm: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400">
+        <div className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>Supabase client configured · Ready for session verification</span>
         </div>
@@ -119,7 +121,7 @@ export const AuthForm: React.FC = () => {
       {errorMessage && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-300"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-700 dark:text-red-300"
         >
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{errorMessage}</span>
@@ -129,7 +131,7 @@ export const AuthForm: React.FC = () => {
       {infoMessage && (
         <div
           role="status"
-          className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-300"
+          className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300"
         >
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{infoMessage}</span>

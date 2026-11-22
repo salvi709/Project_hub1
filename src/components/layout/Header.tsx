@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { NotificationsPopover } from './NotificationsPopover';
@@ -31,12 +32,24 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="h-4 w-4" />
         </button>
 
-        <div className="flex items-baseline gap-2.5 min-w-0">
-          <h1 className="font-display text-base font-semibold tracking-tight text-[var(--ph-text-primary)] truncate">
-            {pageTitle}
-          </h1>
+        <div className="flex items-center gap-2 min-w-0">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
+            <Link
+              to="/"
+              className="hidden sm:inline-block text-xs font-medium text-[var(--ph-text-muted)] hover:text-[var(--ph-text-primary)] transition-colors whitespace-nowrap shrink-0"
+            >
+              ProjectHub
+            </Link>
+            <span aria-hidden="true" className="hidden sm:inline-block text-xs text-[var(--ph-text-muted)]">
+              /
+            </span>
+            <h1 className="font-display text-sm sm:text-base font-semibold tracking-tight text-[var(--ph-text-primary)] truncate">
+              {pageTitle}
+            </h1>
+          </nav>
+
           {pageSubtitle && (
-            <span className="hidden md:inline-block text-xs text-[var(--ph-text-muted)] truncate">
+            <span className="hidden xl:inline-block border-l border-[var(--ph-border)] pl-2.5 text-xs text-[var(--ph-text-muted)] truncate">
               {pageSubtitle}
             </span>
           )}

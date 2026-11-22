@@ -33,9 +33,9 @@ const PRIORITY_FILTERS: { value: PriorityFilter; label: string }[] = [
 const STATUS_TEXT: Record<TaskStatus, { label: string; className: string }> = {
   backlog: { label: 'Backlog', className: 'text-[var(--ph-text-muted)]' },
   todo: { label: 'To Do', className: 'text-[var(--ph-text-secondary)]' },
-  in_progress: { label: 'In Progress', className: 'text-emerald-400' },
-  review: { label: 'In Review', className: 'text-amber-400' },
-  done: { label: 'Done', className: 'text-emerald-300' },
+  in_progress: { label: 'In Progress', className: 'text-emerald-600 dark:text-emerald-400' },
+  review: { label: 'In Review', className: 'text-amber-600 dark:text-amber-400' },
+  done: { label: 'Done', className: 'text-emerald-700 dark:text-emerald-300' },
 };
 
 export const TasksPage: React.FC = () => {

@@ -41,7 +41,9 @@ export const GitHubPage: React.FC = () => {
               in Phase 2.
             </p>
           </div>
-          <span className="font-mono text-xs text-amber-400 shrink-0">Not Connected</span>
+          <span className="font-mono text-xs text-amber-600 dark:text-amber-400 shrink-0">
+            Not Connected
+          </span>
         </div>
       </Card>
 
