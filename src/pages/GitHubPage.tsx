@@ -1,11 +1,27 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { GitBranch, GitPullRequest, Info, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SAMPLE_REPOS } from '../features/github/sampleRepos';
+import { cn } from '../lib/utils';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 
 export const GitHubPage: React.FC = () => {
+  const [languageFilter, setLanguageFilter] = useState<string>('all');
+
+  const languages = useMemo(
+    () => ['all', ...Array.from(new Set(SAMPLE_REPOS.map((r) => r.language)))],
+    []
+  );
+
+  const visibleRepos = useMemo(
+    () =>
+      SAMPLE_REPOS.filter(
+        (repo) => languageFilter === 'all' || repo.language === languageFilter
+      ),
+    [languageFilter]
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 border-b border-[var(--ph-border)] pb-5 sm:flex-row sm:items-center sm:justify-between">
@@ -48,14 +64,34 @@ export const GitHubPage: React.FC = () => {
       </Card>
 
       {/* Sample Repository Preview List */}
-      <div className="space-y-3">
-        <h3 className="font-display text-sm font-semibold text-[var(--ph-text-secondary)]">
-          Sample Linked Repositories (Preview Only)
-        </h3>
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="font-display text-sm font-semibold text-[var(--ph-text-secondary)]">
+            Sample Linked Repositories (Preview Only)
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-1 w-fit">
+            {languages.map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setLanguageFilter(lang)}
+                className={cn(
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
+                  languageFilter === lang
+                    ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
+                    : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+                )}
+              >
+                {lang === 'all' ? 'All Languages' : lang}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {SAMPLE_REPOS.map((repo) => (
-            <Card key={repo.id} className="flex flex-col justify-between">
+          {visibleRepos.map((repo) => (
+            <Card key={repo.id} className="flex flex-col justify-between hover:border-[var(--ph-border-hover)]">
               <CardHeader>
                 <div className="min-w-0">
                   <CardTitle className="font-mono text-sm truncate">{repo.fullName}</CardTitle>
@@ -64,7 +100,11 @@ export const GitHubPage: React.FC = () => {
                   </CardDescription>
                 </div>
               </CardHeader>
-              <CardContent className="pt-2">
+              <CardContent className="pt-2 space-y-3">
+                <div className="flex items-center justify-between text-[11px] text-[var(--ph-text-muted)]">
+                  <span>Last sample push</span>
+                  <span className="font-mono">{repo.lastPush}</span>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ph-border)] pt-3 text-xs text-[var(--ph-text-muted)]">
                   <span>
                     {repo.language} · <span className="font-mono">{repo.branch}</span>

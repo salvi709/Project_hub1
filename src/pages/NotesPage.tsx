@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { FileText, Info, Search } from 'lucide-react';
 import { SAMPLE_NOTES } from '../features/tasks/sampleTasks';
 import type { SampleNote } from '../types/domain';
+import { cn } from '../lib/utils';
+import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../components/ui/Dialog';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -9,18 +11,26 @@ import { Input } from '../components/ui/Input';
 
 export const NotesPage: React.FC = () => {
   const [search, setSearch] = useState('');
+  const [contextFilter, setContextFilter] = useState<string>('all');
   const [selectedNote, setSelectedNote] = useState<SampleNote | null>(null);
+
+  const contexts = useMemo(
+    () => ['all', ...Array.from(new Set(SAMPLE_NOTES.map((n) => n.projectContext)))],
+    []
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return SAMPLE_NOTES.filter(
-      (note) =>
+    return SAMPLE_NOTES.filter((note) => {
+      const matchesContext = contextFilter === 'all' || note.projectContext === contextFilter;
+      const matchesSearch =
         !q ||
         note.title.toLowerCase().includes(q) ||
         note.projectContext.toLowerCase().includes(q) ||
-        note.excerpt.toLowerCase().includes(q)
-    );
-  }, [search]);
+        note.excerpt.toLowerCase().includes(q);
+      return matchesContext && matchesSearch;
+    });
+  }, [search, contextFilter]);
 
   return (
     <div className="space-y-6">
@@ -46,19 +56,58 @@ export const NotesPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Project Context Filter */}
+      <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-1 w-fit">
+        {contexts.map((ctx) => (
+          <button
+            key={ctx}
+            type="button"
+            onClick={() => setContextFilter(ctx)}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
+              contextFilter === ctx
+                ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
+                : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+            )}
+          >
+            {ctx === 'all' ? 'All Notes' : ctx}
+          </button>
+        ))}
+      </div>
+
       {filtered.length === 0 ? (
         <EmptyState
           icon={<FileText className="h-5 w-5" />}
           title="No matching notes"
-          description="Clear the search filter to review the Phase 1 sample architecture notes."
+          description="Clear the search filter or project context to review the Phase 1 sample notes."
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setContextFilter('all');
+                setSearch('');
+              }}
+            >
+              Reset Filters
+            </Button>
+          }
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {filtered.map((note) => (
             <Card
               key={note.id}
+              role="button"
+              tabIndex={0}
               onClick={() => setSelectedNote(note)}
-              className="cursor-pointer hover:border-[var(--ph-border-hover)] transition-colors"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedNote(note);
+                }
+              }}
+              className="flex flex-col justify-between cursor-pointer hover:border-[var(--ph-border-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)] transition-colors"
             >
               <CardHeader>
                 <div>
@@ -90,10 +139,14 @@ export const NotesPage: React.FC = () => {
           <p className="mt-4 text-sm leading-relaxed text-[var(--ph-text-secondary)]">
             {selectedNote?.excerpt}
           </p>
-          <p className="mt-3 text-xs text-[var(--ph-text-muted)]">
-            This is a read-only Phase 1 sample document. Full note creation, tagging, and Supabase
-            storage will be added in a subsequent milestone.
-          </p>
+          <div className="mt-5 flex items-center justify-between gap-4 border-t border-[var(--ph-border)] pt-4">
+            <span className="text-xs text-[var(--ph-text-muted)]">
+              Read-only Phase 1 sample document
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => setSelectedNote(null)}>
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

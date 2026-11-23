@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, RotateCcw } from 'lucide-react';
 import { SAMPLE_NOTIFICATIONS } from '../../features/tasks/sampleTasks';
 import type { SampleNotification } from '../../types/domain';
 import { cn } from '../../lib/utils';
@@ -12,6 +12,10 @@ export const NotificationsPopover: React.FC = () => {
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  };
+
+  const resetNotifications = () => {
+    setNotifications(SAMPLE_NOTIFICATIONS);
   };
 
   const toggleRead = (id: string) => {
@@ -45,7 +49,7 @@ export const NotificationsPopover: React.FC = () => {
         >
           <div className="flex items-center justify-between px-2.5 py-2 border-b border-[var(--ph-border)]">
             <span className="font-display text-xs font-semibold">Notifications</span>
-            {unreadCount > 0 && (
+            {unreadCount > 0 ? (
               <button
                 type="button"
                 onClick={markAllRead}
@@ -53,6 +57,15 @@ export const NotificationsPopover: React.FC = () => {
               >
                 <Check className="h-3 w-3" />
                 Mark all read
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={resetNotifications}
+                className="flex items-center gap-1 text-xs font-medium text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Reset sample
               </button>
             )}
           </div>

@@ -22,7 +22,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ compact = fa
         variant="outline"
         size={compact ? 'sm' : 'md'}
         onClick={install}
-        className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+        className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
       >
         <Download className="h-3.5 w-3.5" />
         <span>Install App</span>
