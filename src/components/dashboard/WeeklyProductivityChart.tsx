@@ -5,7 +5,7 @@ import { useWorkspace } from '../../features/workspace/WorkspaceContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 
-export const WeeklyProductivityChart: React.FC = () => {
+export const WeeklyProductivityChart: React.FC = React.memo(() => {
   const { tasks } = useWorkspace();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -90,14 +90,14 @@ export const WeeklyProductivityChart: React.FC = () => {
 
                   <div className="flex h-36 w-full items-end justify-center gap-1.5 rounded-xl bg-[#FAF8FF] px-1.5 pb-2 transition-colors hover:bg-[var(--ph-bg-secondary)]">
                     <div
-                      className="w-3.5 rounded-full bg-[var(--ph-accent)] transition-all duration-200"
+                      className="w-3.5 rounded-full bg-[var(--ph-accent)] transition-all duration-300 ease-out"
                       style={{
                         height: `${day.completed > 0 ? Math.max(14, completedHeight) : 6}px`,
                         opacity: day.completed > 0 ? 1 : 0.25,
                       }}
                     />
                     <div
-                      className="w-3.5 rounded-full bg-[#B9D9FC] transition-all duration-200"
+                      className="w-3.5 rounded-full bg-[#B9D9FC] transition-all duration-300 ease-out"
                       style={{
                         height: `${day.active > 0 ? Math.max(14, activeHeight) : 6}px`,
                         opacity: day.active > 0 ? 1 : 0.35,
@@ -122,4 +122,5 @@ export const WeeklyProductivityChart: React.FC = () => {
       </CardContent>
     </Card>
   );
-};
+});
+WeeklyProductivityChart.displayName = 'WeeklyProductivityChart';

@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, LogOut, Settings, X } from 'lucide-react';
 import { NAVIGATION_ITEMS, type NavSection } from '../../types/navigation';
 import { useAuth } from '../../features/auth/AuthContext';
@@ -60,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         >
           <NavLink
-            to="/"
+            to="/overview"
             onClick={onCloseMobile}
             className="flex items-center focus-visible:outline-none"
           >
@@ -129,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <NavLink
                         key={item.id}
                         to={item.path}
-                        end={item.path === '/'}
+                        end={item.path === '/overview'}
                         onClick={onCloseMobile}
                         title={isCollapsed ? item.label : undefined}
                         className={({ isActive }) => {
@@ -253,25 +254,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       <aside
         className={cn(
-          'hidden lg:block shrink-0 transition-[width] duration-200',
+          'hidden lg:block shrink-0 transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
           collapsed ? 'w-[72px]' : 'w-[252px]'
         )}
       >
         <div className="sticky top-0 h-screen">{renderSidebarBody(false)}</div>
       </aside>
 
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="fixed inset-0 bg-[#29243A]/25 backdrop-blur-[2px]"
-            onClick={onCloseMobile}
-            aria-hidden="true"
-          />
-          <aside className="fixed inset-y-0 left-0 z-50 w-64">
-            {renderSidebarBody(true)}
-          </aside>
-        </div>
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+              className="fixed inset-0 bg-[#29243A]/25 backdrop-blur-[2px]"
+              onClick={onCloseMobile}
+              aria-hidden="true"
+            />
+            <motion.aside
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed inset-y-0 left-0 z-50 w-64"
+            >
+              {renderSidebarBody(true)}
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

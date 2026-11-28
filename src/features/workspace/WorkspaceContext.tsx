@@ -146,27 +146,55 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return [item, ...prev].slice(0, 30);
   };
 
+  const projectsById = useMemo(() => {
+    const map = new Map<string, WorkspaceProject>();
+    for (const project of state.projects) {
+      map.set(project.id, project);
+    }
+    return map;
+  }, [state.projects]);
+
+  const projectProgressMap = useMemo(() => {
+    const taskStats = new Map<string, { total: number; completed: number; inProgress: number }>();
+    for (const task of state.tasks) {
+      if (!task.projectId) continue;
+      const entry = taskStats.get(task.projectId) ?? { total: 0, completed: 0, inProgress: 0 };
+      entry.total += 1;
+      if (task.status === 'completed') entry.completed += 1;
+      else if (task.status === 'in_progress') entry.inProgress += 1;
+      taskStats.set(task.projectId, entry);
+    }
+
+    const progressMap = new Map<string, number>();
+    for (const project of state.projects) {
+      if (project.status === 'completed') {
+        progressMap.set(project.id, 100);
+        continue;
+      }
+      const stats = taskStats.get(project.id);
+      if (!stats || stats.total === 0) {
+        progressMap.set(project.id, project.status === 'active' ? 15 : 0);
+        continue;
+      }
+      progressMap.set(
+        project.id,
+        Math.round(((stats.completed + stats.inProgress * 0.4) / stats.total) * 100)
+      );
+    }
+    return progressMap;
+  }, [state.projects, state.tasks]);
+
   const getProjectById = useCallback(
     (id: string | null) => {
       if (!id) return undefined;
-      return state.projects.find((p) => p.id === id);
+      return projectsById.get(id);
     },
-    [state.projects]
+    [projectsById]
   );
 
   const getProjectProgress = useCallback(
-    (projectId: string) => {
-      const project = state.projects.find((p) => p.id === projectId);
-      if (project?.status === 'completed') return 100;
-      const projectTasks = state.tasks.filter((t) => t.projectId === projectId);
-      if (projectTasks.length === 0) {
-        return project?.status === 'active' ? 15 : 0;
-      }
-      const completedCount = projectTasks.filter((t) => t.status === 'completed').length;
-      const inProgressCount = projectTasks.filter((t) => t.status === 'in_progress').length;
-      return Math.round(((completedCount + inProgressCount * 0.4) / projectTasks.length) * 100);
-    },
-    [state.projects, state.tasks]
+    (projectId: string) => projectProgressMap.get(projectId) ?? 0,
+    [projectProgressMap]
   );
 
   const createProject = useCallback((input: ProjectInput): WorkspaceProject => {
@@ -473,36 +501,58 @@ export const WorkspaceProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     [state]
   );
 
-  return (
-    <WorkspaceContext.Provider
-      value={{
-        projects: state.projects,
-        tasks: state.tasks,
-        notes: state.notes,
-        activity: state.activity,
-        hasSampleData,
-        getProjectById,
-        getProjectProgress,
-        createProject,
-        updateProject,
-        deleteProject,
-        createTask,
-        updateTask,
-        deleteTask,
-        moveTaskStatus,
-        toggleSubtask,
-        addSubtask,
-        deleteSubtask,
-        createNote,
-        updateNote,
-        deleteNote,
-        clearWorkspaceData,
-        restoreSampleData,
-      }}
-    >
-      {children}
-    </WorkspaceContext.Provider>
+  const value = useMemo<WorkspaceContextValue>(
+    () => ({
+      projects: state.projects,
+      tasks: state.tasks,
+      notes: state.notes,
+      activity: state.activity,
+      hasSampleData,
+      getProjectById,
+      getProjectProgress,
+      createProject,
+      updateProject,
+      deleteProject,
+      createTask,
+      updateTask,
+      deleteTask,
+      moveTaskStatus,
+      toggleSubtask,
+      addSubtask,
+      deleteSubtask,
+      createNote,
+      updateNote,
+      deleteNote,
+      clearWorkspaceData,
+      restoreSampleData,
+    }),
+    [
+      state.projects,
+      state.tasks,
+      state.notes,
+      state.activity,
+      hasSampleData,
+      getProjectById,
+      getProjectProgress,
+      createProject,
+      updateProject,
+      deleteProject,
+      createTask,
+      updateTask,
+      deleteTask,
+      moveTaskStatus,
+      toggleSubtask,
+      addSubtask,
+      deleteSubtask,
+      createNote,
+      updateNote,
+      deleteNote,
+      clearWorkspaceData,
+      restoreSampleData,
+    ]
   );
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 };
 
 export function useWorkspace(): WorkspaceContextValue {

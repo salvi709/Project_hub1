@@ -13,12 +13,17 @@ export const NotFoundPage: React.FC = () => {
       <p className="mt-2 max-w-md text-sm text-[var(--ph-text-secondary)]">
         The requested workspace route does not exist in ProjectHub.
       </p>
-      <Button asChild variant="outline" size="sm" className="mt-6">
-        <Link to="/">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Overview</span>
-        </Link>
-      </Button>
+      <div className="mt-6 flex items-center gap-3">
+        <Button asChild variant="outline" size="sm">
+          <Link to="/overview">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Overview</span>
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/">Home</Link>
+        </Button>
+      </div>
     </div>
   );
 };

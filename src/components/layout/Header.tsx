@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, LogOut, Menu, Search, Settings } from 'lucide-react';
+import { ChevronRight, Globe, LogOut, Menu, Search, Settings } from 'lucide-react';
 import { NAVIGATION_ITEMS } from '../../types/navigation';
 import { useAuth } from '../../features/auth/AuthContext';
 import { useWorkspace } from '../../features/workspace/WorkspaceContext';
@@ -114,6 +114,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu, onOpenSearch }
             <DropdownMenuItem onSelect={() => navigate('/settings')}>
               <Settings className="h-3.5 w-3.5" />
               <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate('/')}>
+              <Globe className="h-3.5 w-3.5" />
+              <span>Landing page</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

@@ -1,4 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { env } from '../../lib/env';
 import { authService } from '../../services/authService';
@@ -79,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [isSupabaseConfigured, loadProfile]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (isSupabaseConfigured) {
       await authService.signOut();
       setSession(null);
@@ -89,18 +96,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.sessionStorage.setItem(PREVIEW_SIGNED_OUT_KEY, 'true');
       setPreviewSignedOut(true);
     }
-  };
+  }, [isSupabaseConfigured]);
 
-  const enterPreviewMode = () => {
+  const enterPreviewMode = useCallback(() => {
     window.sessionStorage.removeItem(PREVIEW_SIGNED_OUT_KEY);
     setPreviewSignedOut(false);
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await loadProfile(user.id);
     }
-  };
+  }, [user, loadProfile]);
 
   const displayName =
     profile?.full_name ||
@@ -115,26 +122,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticatedOrPreview = isSupabaseConfigured ? Boolean(session) : isPreviewMode;
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        isLoading,
-        isSupabaseConfigured,
-        isPreviewMode,
-        isAuthenticatedOrPreview,
-        displayName,
-        displayEmail,
-        signOut,
-        enterPreviewMode,
-        refreshProfile,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      session,
+      profile,
+      isLoading,
+      isSupabaseConfigured,
+      isPreviewMode,
+      isAuthenticatedOrPreview,
+      displayName,
+      displayEmail,
+      signOut,
+      enterPreviewMode,
+      refreshProfile,
+    }),
+    [
+      user,
+      session,
+      profile,
+      isLoading,
+      isSupabaseConfigured,
+      isPreviewMode,
+      isAuthenticatedOrPreview,
+      displayName,
+      displayEmail,
+      signOut,
+      enterPreviewMode,
+      refreshProfile,
+    ]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export function useAuth(): AuthContextValue {

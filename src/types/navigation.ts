@@ -21,7 +21,7 @@ export const NAVIGATION_ITEMS: NavItem[] = [
   {
     id: 'overview',
     label: 'Overview',
-    path: '/',
+    path: '/overview',
     iconName: 'LayoutDashboard',
     section: 'main',
     description: 'Daily focus, active projects, and upcoming deadlines',

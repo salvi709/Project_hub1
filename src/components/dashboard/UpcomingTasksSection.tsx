@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, Calendar, Check, CheckSquare, Plus } from 'lucide-react';
 import { formatShortDate, isOverdueISO, isTodayISO, offsetISODate } from '../../lib/date';
 import { PRIORITY_META } from '../../lib/statusMeta';
@@ -109,61 +110,75 @@ export const UpcomingTasksSection: React.FC<UpcomingTasksSectionProps> = ({ onNe
             <>
               {/* Highlighted Today Priority Cards */}
               <div className="space-y-2.5">
-                {todaysPriorities.map((task, idx) => {
-                  const project = getProjectById(task.projectId);
-                  const priorityMeta = PRIORITY_META[task.priority];
-                  const doneSubs = task.subtasks.filter((s) => s.completed).length;
-                  const cardBg = PRIORITY_CARD_TINTS[idx % PRIORITY_CARD_TINTS.length];
-                  const overdue = isOverdueISO(task.dueDate);
-                  const dueToday = isTodayISO(task.dueDate);
+                <AnimatePresence initial={false}>
+                  {todaysPriorities.map((task, idx) => {
+                    const project = getProjectById(task.projectId);
+                    const priorityMeta = PRIORITY_META[task.priority];
+                    const doneSubs = task.subtasks.filter((s) => s.completed).length;
+                    const cardBg = PRIORITY_CARD_TINTS[idx % PRIORITY_CARD_TINTS.length];
+                    const overdue = isOverdueISO(task.dueDate);
+                    const dueToday = isTodayISO(task.dueDate);
 
-                  return (
-                    <div
-                      key={task.id}
-                      className="flex items-start justify-between gap-3 rounded-xl p-3.5 transition-transform duration-150 hover:-translate-y-0.5"
-                      style={{ backgroundColor: cardBg }}
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <button
-                          type="button"
-                          onClick={() => moveTaskStatus(task.id, 'completed')}
-                          aria-label={`Complete ${task.title}`}
-                          className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[#29243A]/20 bg-white text-transparent transition-colors hover:border-[var(--ph-accent)] hover:text-[var(--ph-accent)] cursor-pointer"
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
-                        <div className="min-w-0">
-                          <p className="truncate font-display text-sm font-semibold text-[var(--ph-text-primary)]">
-                            {task.title}
-                          </p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--ph-text-secondary)]">
-                            <span>{project?.name ?? 'Personal'}</span>
-                            {task.subtasks.length > 0 && (
-                              <span className="font-mono text-[10px]">
-                                · {doneSubs}/{task.subtasks.length} steps
-                              </span>
-                            )}
+                    return (
+                      <motion.div
+                        key={task.id}
+                        layout="position"
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+                        className="flex items-start justify-between gap-3 rounded-xl p-3.5 transition-transform duration-150 hover:-translate-y-0.5"
+                        style={{ backgroundColor: cardBg }}
+                      >
+                        <div className="flex min-w-0 items-start gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              moveTaskStatus(task.id, 'completed');
+                              toast({
+                                title: 'Task completed',
+                                description: task.title,
+                                variant: 'success',
+                              });
+                            }}
+                            aria-label={`Complete ${task.title}`}
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[#29243A]/20 bg-white text-transparent transition-colors hover:border-[var(--ph-accent)] hover:text-[var(--ph-accent)] cursor-pointer"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                          <div className="min-w-0">
+                            <p className="truncate font-display text-sm font-semibold text-[var(--ph-text-primary)]">
+                              {task.title}
+                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--ph-text-secondary)]">
+                              <span>{project?.name ?? 'Personal'}</span>
+                              {task.subtasks.length > 0 && (
+                                <span className="font-mono text-[10px]">
+                                  · {doneSubs}/{task.subtasks.length} steps
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <Badge variant={priorityMeta.variant}>{priorityMeta.label}</Badge>
-                        <span
-                          className={`font-mono text-[11px] font-medium ${
-                            overdue
-                              ? 'text-[#B53D3D]'
-                              : dueToday
-                              ? 'text-[var(--ph-accent-hover)]'
-                              : 'text-[var(--ph-text-secondary)]'
-                          }`}
-                        >
-                          {dueToday ? 'Today' : formatShortDate(task.dueDate)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                        <div className="flex shrink-0 flex-col items-end gap-1">
+                          <Badge variant={priorityMeta.variant}>{priorityMeta.label}</Badge>
+                          <span
+                            className={`font-mono text-[11px] font-medium ${
+                              overdue
+                                ? 'text-[#B53D3D]'
+                                : dueToday
+                                ? 'text-[var(--ph-accent-hover)]'
+                                : 'text-[var(--ph-text-secondary)]'
+                            }`}
+                          >
+                            {dueToday ? 'Today' : formatShortDate(task.dueDate)}
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               </div>
 
               {/* Upcoming Deadlines List */}

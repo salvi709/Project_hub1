@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Github, KeyRound, Mail } from 'lucide-react';
 import { env } from '../../lib/env';
@@ -9,10 +9,18 @@ import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/Tabs';
 
-export const AuthForm: React.FC = () => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+interface AuthFormProps {
+  initialMode?: 'signin' | 'signup';
+}
+
+export const AuthForm: React.FC<AuthFormProps> = ({ initialMode = 'signin' }) => {
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,7 +48,7 @@ export const AuthForm: React.FC = () => {
         if (result.error) {
           setErrorMessage(result.error);
         } else {
-          navigate('/');
+          navigate('/overview');
         }
       } else {
         const result = await authService.signUpWithEmail(email, password, fullName);
@@ -49,7 +57,7 @@ export const AuthForm: React.FC = () => {
         } else if (result.requiresEmailConfirmation) {
           setInfoMessage('Check your inbox for a confirmation link to activate your account.');
         } else {
-          navigate('/');
+          navigate('/overview');
         }
       }
     } finally {
@@ -74,7 +82,7 @@ export const AuthForm: React.FC = () => {
 
   const handleEnterPreview = () => {
     enterPreviewMode();
-    navigate('/');
+    navigate('/overview');
   };
 
   return (

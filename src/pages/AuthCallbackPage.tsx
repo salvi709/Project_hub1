@@ -17,7 +17,7 @@ export const AuthCallbackPage: React.FC = () => {
         return;
       }
       if (session || !authService.isConfigured()) {
-        navigate('/', { replace: true });
+        navigate('/overview', { replace: true });
       } else {
         navigate('/login', { replace: true });
       }

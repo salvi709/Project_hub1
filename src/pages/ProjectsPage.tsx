@@ -64,6 +64,18 @@ export const ProjectsPage: React.FC = () => {
     return { total: projects.length, active, completed, overdue };
   }, [projects]);
 
+  const taskStatsByProject = useMemo(() => {
+    const map = new Map<string, { total: number; done: number }>();
+    for (const task of tasks) {
+      if (!task.projectId) continue;
+      const entry = map.get(task.projectId) ?? { total: 0, done: 0 };
+      entry.total += 1;
+      if (task.status === 'completed') entry.done += 1;
+      map.set(task.projectId, entry);
+    }
+    return map;
+  }, [tasks]);
+
   const filteredProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
     return projects
@@ -277,8 +289,9 @@ export const ProjectsPage: React.FC = () => {
             const priorityMeta = PRIORITY_META[project.priority];
             const visual = getProjectVisual(project.category, project.id);
             const Icon = visual.Icon;
-            const projectTasks = tasks.filter((t) => t.projectId === project.id);
-            const doneCount = projectTasks.filter((t) => t.status === 'completed').length;
+            const taskStats = taskStatsByProject.get(project.id) ?? { total: 0, done: 0 };
+            const doneCount = taskStats.done;
+            const totalCount = taskStats.total;
 
             return (
               <article
@@ -369,7 +382,7 @@ export const ProjectsPage: React.FC = () => {
                         <Calendar className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
                         Due {formatShortDate(project.targetDate)}
                         <span className="text-[var(--ph-text-muted)]">
-                          · {doneCount}/{projectTasks.length} tasks
+                          · {doneCount}/{totalCount} tasks
                         </span>
                       </span>
 
