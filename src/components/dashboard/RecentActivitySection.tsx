@@ -11,17 +11,29 @@ export const RecentActivitySection: React.FC = () => {
   const items = useMemo(() => {
     const base =
       filter === 'all' ? activity : activity.filter((item) => item.category === filter);
-    return base.slice(0, 6);
+    return base.slice(0, 5);
   }, [activity, filter]);
 
-  const getIcon = (category: 'project' | 'task' | 'note') => {
+  const getVisual = (category: 'project' | 'task' | 'note') => {
     switch (category) {
       case 'project':
-        return <FolderKanban className="h-3.5 w-3.5" />;
+        return {
+          icon: <FolderKanban className="h-3.5 w-3.5" />,
+          bg: '#EEE8FF',
+          ink: '#6545C4',
+        };
       case 'task':
-        return <CheckSquare className="h-3.5 w-3.5" />;
+        return {
+          icon: <CheckSquare className="h-3.5 w-3.5" />,
+          bg: '#DDF5E9',
+          ink: '#277554',
+        };
       case 'note':
-        return <FileText className="h-3.5 w-3.5" />;
+        return {
+          icon: <FileText className="h-3.5 w-3.5" />,
+          bg: '#FFE8DC',
+          ink: '#B35A30',
+        };
     }
   };
 
@@ -30,18 +42,18 @@ export const RecentActivitySection: React.FC = () => {
       <CardHeader className="flex-col gap-3 border-b border-[var(--ph-border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription>Updates across your workspace items</CardDescription>
+          <CardDescription>Updates across your projects, tasks, and notes</CardDescription>
         </div>
 
-        <div className="inline-flex rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
+        <div className="inline-flex rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
           {(['all', 'task', 'project', 'note'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setFilter(tab)}
-              className={`rounded-sm px-2 py-1 text-[11px] font-medium capitalize transition-colors cursor-pointer ${
+              className={`rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition-colors cursor-pointer ${
                 filter === tab
-                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                  ? 'bg-white text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
                   : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
               }`}
             >
@@ -60,23 +72,33 @@ export const RecentActivitySection: React.FC = () => {
           />
         ) : (
           <div className="space-y-3.5">
-            {items.map((item) => (
-              <div key={item.id} className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] text-[var(--ph-text-secondary)]">
-                  {getIcon(item.category)}
+            {items.map((item) => {
+              const v = getVisual(item.category);
+              return (
+                <div key={item.id} className="flex items-start gap-3">
+                  <div
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: v.bg, color: v.ink }}
+                  >
+                    {v.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs leading-relaxed text-[var(--ph-text-secondary)]">
+                      <span className="font-semibold text-[var(--ph-text-primary)]">
+                        {item.actor}
+                      </span>{' '}
+                      {item.action}{' '}
+                      <span className="font-semibold text-[var(--ph-text-primary)]">
+                        {item.target}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
+                      {item.context} · {item.timestamp}
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs leading-relaxed text-[var(--ph-text-secondary)]">
-                    <span className="font-medium text-[var(--ph-text-primary)]">{item.actor}</span>{' '}
-                    {item.action}{' '}
-                    <span className="font-medium text-[var(--ph-text-primary)]">{item.target}</span>
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
-                    {item.context} · {item.timestamp}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>

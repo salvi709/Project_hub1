@@ -51,11 +51,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const isCollapsed = collapsed && !isMobile;
 
     return (
-      <div className="flex h-full flex-col bg-[var(--ph-bg-secondary)] border-r border-[var(--ph-border)]">
-        {/* Brand Row */}
+      <div className="flex h-full flex-col border-r border-[var(--ph-border)] bg-[var(--ph-bg-card)]">
+        {/* Brand Header */}
         <div
           className={cn(
-            'flex h-14 items-center border-b border-[var(--ph-border)] px-4',
+            'flex h-16 items-center px-4',
             isCollapsed ? 'justify-center px-2' : 'justify-between'
           )}
         >
@@ -72,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={onToggleCollapse}
               aria-label="Collapse sidebar"
-              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-md text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)] transition-colors cursor-pointer"
+              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] transition-colors cursor-pointer"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -83,23 +83,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={onCloseMobile}
               aria-label="Close navigation menu"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        {/* Workspace Tag */}
+        {/* Workspace Card */}
         {!isCollapsed && (
-          <div className="px-3 pt-3">
-            <div className="flex items-center justify-between rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-card)] px-2.5 py-1.5">
+          <div className="px-3.5 pb-2">
+            <div className="flex items-center justify-between rounded-xl border border-[var(--ph-border)] bg-[#FAF8FF] px-3 py-2">
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold text-[var(--ph-text-primary)]">
+                <p className="truncate font-display text-xs font-semibold text-[var(--ph-text-primary)]">
                   Personal Workspace
                 </p>
-                <p className="truncate text-[10px] text-[var(--ph-text-muted)]">
-                  {isPreviewMode ? 'Local Preview' : 'Synced Workspace'}
+                <p className="truncate text-[11px] text-[var(--ph-text-secondary)]">
+                  {isPreviewMode ? 'Local Preview Mode' : 'Synced Workspace'}
                 </p>
               </div>
               <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--ph-accent)]" />
@@ -110,18 +110,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation Sections */}
         <nav
           aria-label="Primary navigation"
-          className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5"
+          className="flex-1 overflow-y-auto px-3 py-4 space-y-6"
         >
           {sections.map((section) => {
             const items = NAVIGATION_ITEMS.filter((i) => i.section === section);
             return (
               <div key={section}>
                 {!isCollapsed && (
-                  <p className="mb-1.5 px-2.5 text-[10px] font-semibold tracking-wider text-[var(--ph-text-muted)]">
+                  <p className="mb-2 px-2.5 text-[10px] font-semibold tracking-wider text-[var(--ph-text-muted)]">
                     {SECTION_TITLES[section]}
                   </p>
                 )}
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {items.map((item) => {
                     const isProjectsRoute =
                       item.path === '/projects' && location.pathname.startsWith('/projects/');
@@ -135,10 +135,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         className={({ isActive }) => {
                           const active = isActive || isProjectsRoute;
                           return cn(
-                            'group flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors',
+                            'group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150',
                             isCollapsed && 'justify-center px-2',
                             active
-                              ? 'bg-[var(--ph-accent-soft)] text-[var(--ph-accent-text)] font-semibold'
+                              ? 'bg-[var(--ph-lavender-soft)] text-[var(--ph-lavender-ink)] font-semibold'
                               : 'text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)]'
                           );
                         }}
@@ -147,16 +147,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           const active = isActive || isProjectsRoute;
                           return (
                             <>
-                              <NavIcon
-                                name={item.iconName}
+                              <span
                                 className={cn(
-                                  'h-4 w-4 shrink-0',
+                                  'flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors',
                                   active
-                                    ? 'text-[var(--ph-accent-text)]'
+                                    ? 'bg-white text-[var(--ph-accent-hover)] shadow-[var(--ph-shadow-sm)]'
                                     : 'text-[var(--ph-text-secondary)] group-hover:text-[var(--ph-text-primary)]'
                                 )}
-                              />
-                              {!isCollapsed && <span className="truncate">{item.label}</span>}
+                              >
+                                <NavIcon name={item.iconName} className="h-4 w-4" />
+                              </span>
+                              {!isCollapsed && (
+                                <span className="truncate whitespace-nowrap">{item.label}</span>
+                              )}
                             </>
                           );
                         }}
@@ -171,38 +174,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Expand Toggle when Collapsed */}
         {!isMobile && isCollapsed && (
-          <div className="flex justify-center border-t border-[var(--ph-border)] py-2">
+          <div className="flex justify-center border-t border-[var(--ph-border)] py-2.5">
             <button
               type="button"
               onClick={onToggleCollapse}
               aria-label="Expand sidebar"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        {/* User Footer */}
-        <div className="border-t border-[var(--ph-border)] p-2.5">
+        {/* User Profile Footer */}
+        <div className="border-t border-[var(--ph-border)] p-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md p-1.5 text-left transition-colors hover:bg-[var(--ph-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)] cursor-pointer',
+                  'flex w-full items-center gap-2.5 rounded-xl p-1.5 text-left transition-colors hover:bg-[var(--ph-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)] cursor-pointer',
                   isCollapsed && 'justify-center'
                 )}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--ph-accent-soft)] text-xs font-semibold text-[var(--ph-accent-text)]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--ph-lavender-soft)] text-xs font-bold text-[var(--ph-lavender-ink)]">
                   {initials || 'PH'}
                 </div>
                 {!isCollapsed && (
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-[var(--ph-text-primary)]">
+                    <p className="truncate text-xs font-semibold text-[var(--ph-text-primary)]">
                       {displayName}
                     </p>
-                    <p className="truncate text-[10px] text-[var(--ph-text-muted)]">
+                    <p className="truncate text-[11px] text-[var(--ph-text-muted)]">
                       {displayEmail}
                     </p>
                   </div>
@@ -251,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <aside
         className={cn(
           'hidden lg:block shrink-0 transition-[width] duration-200',
-          collapsed ? 'w-[68px]' : 'w-[244px]'
+          collapsed ? 'w-[72px]' : 'w-[252px]'
         )}
       >
         <div className="sticky top-0 h-screen">{renderSidebarBody(false)}</div>
@@ -260,7 +263,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="fixed inset-0 bg-[#15131C]/50 backdrop-blur-[2px]"
+            className="fixed inset-0 bg-[#29243A]/25 backdrop-blur-[2px]"
             onClick={onCloseMobile}
             aria-hidden="true"
           />

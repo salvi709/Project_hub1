@@ -5,23 +5,18 @@ import {
   CheckCircle2,
   Database,
   Github,
-  Laptop,
   LogOut,
-  Moon,
   RotateCcw,
   ShieldAlert,
   Smartphone,
-  Sun,
   Trash2,
+  User,
 } from 'lucide-react';
 import { env } from '../lib/env';
 import { profileService } from '../services/profileService';
 import { useAuth } from '../features/auth/AuthContext';
 import { useWorkspace } from '../features/workspace/WorkspaceContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { useTheme } from '../hooks/useTheme';
-import { cn } from '../lib/utils';
-import type { ThemePreference } from '../types/database';
 import { PWAInstallButton } from '../components/layout/PWAInstallButton';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -33,7 +28,6 @@ import { useToast } from '../components/ui/ToastProvider';
 const NOTIF_PREFS_KEY = 'projecthub-notification-prefs';
 
 export const SettingsPage: React.FC = () => {
-  const { theme, setTheme } = useTheme();
   const {
     user,
     profile,
@@ -113,7 +107,7 @@ export const SettingsPage: React.FC = () => {
     const { error } = await profileService.updateProfile(user.id, {
       full_name: fullName.trim() || null,
       role_title: roleTitle.trim() || null,
-      theme_preference: theme,
+      theme_preference: 'light',
     });
     setSaving(false);
     if (error) {
@@ -131,39 +125,33 @@ export const SettingsPage: React.FC = () => {
   const isGitHubConnected =
     user?.app_metadata?.provider === 'github' || Boolean(githubUsername);
 
-  const themeOptions: {
-    value: ThemePreference;
-    label: string;
-    detail: string;
-    icon: React.ReactNode;
-  }[] = [
-    { value: 'light', label: 'Light', detail: 'Calm #F8F7FC paper surface', icon: <Sun className="h-4 w-4" /> },
-    { value: 'dark', label: 'Dark', detail: 'Deep #15131C evening slate', icon: <Moon className="h-4 w-4" /> },
-    { value: 'system', label: 'System', detail: 'Match OS appearance', icon: <Laptop className="h-4 w-4" /> },
-  ];
-
   return (
     <div className="max-w-4xl space-y-6">
       <div className="border-b border-[var(--ph-border)] pb-5">
-        <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
+        <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ph-text-primary)]">
           Settings
         </h2>
         <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
-          Manage your profile, theme, account status, GitHub integration, notifications, and workspace preferences.
+          Manage your profile, account status, GitHub integration, notifications, and workspace preferences.
         </p>
       </div>
 
-      {/* 1. Profile */}
+      {/* 1. Profile Settings */}
       <Card>
         <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>
-              Identity synced to <code className="font-mono text-[11px]">public.profiles</code> when authenticated.
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ph-lavender-soft)] text-[var(--ph-lavender-ink)]">
+              <User className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle>Profile Settings</CardTitle>
+              <CardDescription>
+                Identity synced to <code className="font-mono text-[11px]">public.profiles</code> when authenticated.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-5">
           <form onSubmit={handleSaveProfile} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor="profile-name" className="text-xs font-medium text-[var(--ph-text-secondary)]">
@@ -210,69 +198,24 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 2. Appearance */}
+      {/* 2. Account & Supabase */}
       <Card>
         <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>
-              Switch between Soft Lavender Light, Dark, or follow your system preference.
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ph-sky-soft)] text-[var(--ph-sky-ink)]">
+              <Database className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle>Account Settings</CardTitle>
+              <CardDescription>
+                Supabase authentication session and environment readiness.
+              </CardDescription>
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {themeOptions.map((option) => {
-              const selected = theme === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  className={cn(
-                    'flex items-start gap-3 rounded-lg border p-3.5 text-left transition-colors cursor-pointer',
-                    selected
-                      ? 'border-[var(--ph-accent)] bg-[var(--ph-accent-soft)]'
-                      : 'border-[var(--ph-border)] bg-[var(--ph-bg-card)] hover:border-[var(--ph-border-hover)]'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'mt-0.5',
-                      selected ? 'text-[var(--ph-accent-text)]' : 'text-[var(--ph-text-secondary)]'
-                    )}
-                  >
-                    {option.icon}
-                  </span>
-                  <div>
-                    <p className="text-sm font-medium text-[var(--ph-text-primary)]">
-                      {option.label}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-[var(--ph-text-secondary)]">
-                      {option.detail}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. Account & Supabase */}
-      <Card>
-        <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>Account &amp; Supabase</CardTitle>
-            <CardDescription>
-              Session state and environment configuration (<code className="font-mono text-[11px]">VITE_SUPABASE_URL</code>).
-            </CardDescription>
-          </div>
-          <Database className="h-4 w-4 text-[var(--ph-text-muted)]" />
-        </CardHeader>
-        <CardContent className="space-y-4 pt-4">
+        <CardContent className="space-y-4 pt-5">
           {isSupabaseConfigured ? (
-            <div className="flex items-start gap-2.5 rounded-md border border-[var(--ph-border)] bg-[var(--ph-success-soft)] p-3.5 text-xs text-[var(--ph-success)]">
+            <div className="flex items-start gap-2.5 rounded-xl bg-[var(--ph-mint-soft)] p-3.5 text-xs text-[var(--ph-mint-ink)]">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <p className="font-semibold">Supabase configured</p>
@@ -282,10 +225,10 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="flex items-start gap-2.5 rounded-md border border-[var(--ph-border)] bg-[var(--ph-warning-soft)] p-3.5 text-xs text-[var(--ph-text-secondary)]">
-              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ph-warning)]" />
+            <div className="flex items-start gap-2.5 rounded-xl bg-[var(--ph-warning-soft)] p-3.5 text-xs text-[var(--ph-text-secondary)]">
+              <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#9B6218]" />
               <div className="space-y-1">
-                <p className="font-semibold text-[var(--ph-warning)]">
+                <p className="font-semibold text-[#9B6218]">
                   Supabase Not Configured (Local Preview Mode)
                 </p>
                 <p>{env.validationIssues.join(' ')}</p>
@@ -312,18 +255,23 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 4. GitHub Integration */}
+      {/* 3. GitHub Settings */}
       <Card>
         <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>GitHub Integration</CardTitle>
-            <CardDescription>OAuth identity and repository linking status</CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ph-peach-soft)] text-[var(--ph-peach-ink)]">
+              <Github className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle>GitHub Settings</CardTitle>
+              <CardDescription>OAuth identity and repository linking status</CardDescription>
+            </div>
           </div>
-          <Badge variant={isGitHubConnected ? 'success' : 'neutral'}>
+          <Badge variant={isGitHubConnected ? 'mint' : 'neutral'}>
             {isGitHubConnected ? `Connected · @${githubUsername ?? 'github'}` : 'Not connected'}
           </Badge>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-[var(--ph-text-secondary)]">
             {isGitHubConnected
               ? 'GitHub provider linked to your Supabase user session.'
@@ -336,17 +284,21 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 5. Notifications */}
+      {/* 4. Notification Settings */}
       <Card>
         <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>Notifications</CardTitle>
-            <CardDescription>Choose which workspace reminders are highlighted</CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ph-mint-soft)] text-[var(--ph-mint-ink)]">
+              <Bell className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle>Notification Settings</CardTitle>
+              <CardDescription>Choose which workspace reminders are highlighted</CardDescription>
+            </div>
           </div>
-          <Bell className="h-4 w-4 text-[var(--ph-text-muted)]" />
         </CardHeader>
         <CardContent className="divide-y divide-[var(--ph-border)] pt-2">
-          <div className="flex items-center justify-between gap-4 py-3">
+          <div className="flex items-center justify-between gap-4 py-3.5">
             <div>
               <p className="text-sm font-medium text-[var(--ph-text-primary)]">
                 Tasks due today reminders
@@ -362,7 +314,7 @@ export const SettingsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-3">
+          <div className="flex items-center justify-between gap-4 py-3.5">
             <div>
               <p className="text-sm font-medium text-[var(--ph-text-primary)]">
                 Project milestone alerts
@@ -378,7 +330,7 @@ export const SettingsPage: React.FC = () => {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 py-3">
+          <div className="flex items-center justify-between gap-4 py-3.5">
             <div>
               <p className="text-sm font-medium text-[var(--ph-text-primary)]">
                 Weekly summary digest
@@ -396,18 +348,22 @@ export const SettingsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* 6. Application Preferences & Sample Data */}
+      {/* 5. Application Preferences */}
       <Card>
         <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-          <div>
-            <CardTitle>Application Preferences</CardTitle>
-            <CardDescription>
-              Progressive Web App installability and local workspace sample controls
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--ph-lavender-soft)] text-[var(--ph-lavender-ink)]">
+              <Smartphone className="h-4 w-4" />
+            </div>
+            <div>
+              <CardTitle>Application Preferences</CardTitle>
+              <CardDescription>
+                Progressive Web App installability and local workspace sample controls
+              </CardDescription>
+            </div>
           </div>
-          <Smartphone className="h-4 w-4 text-[var(--ph-text-muted)]" />
         </CardHeader>
-        <CardContent className="space-y-4 pt-4">
+        <CardContent className="space-y-4 pt-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-[var(--ph-text-primary)]">
@@ -415,7 +371,7 @@ export const SettingsPage: React.FC = () => {
               </p>
               <p className="text-xs text-[var(--ph-text-secondary)]">
                 Network status:{' '}
-                <span className={isOnline ? 'text-[var(--ph-success)]' : 'text-[var(--ph-warning)]'}>
+                <span className={isOnline ? 'font-medium text-[var(--ph-mint-ink)]' : 'font-medium text-[#9B6218]'}>
                   {isOnline ? 'Online' : 'Offline (shell cached)'}
                 </span>
               </p>
@@ -453,7 +409,7 @@ export const SettingsPage: React.FC = () => {
                   clearWorkspaceData();
                   toast({ title: 'Workspace cleared', description: 'Showing clean empty states.' });
                 }}
-                className="text-[var(--ph-error)]"
+                className="text-[#B53D3D]"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 Clear all data

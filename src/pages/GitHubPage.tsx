@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
+  Code2,
   GitBranch,
   GitCommit,
   GitPullRequest,
@@ -57,7 +58,7 @@ export const GitHubPage: React.FC = () => {
       toast({
         title: 'Supabase OAuth required',
         description:
-          'Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with GitHub provider enabled in Settings.',
+          'Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with GitHub provider enabled.',
         variant: 'warning',
       });
       return;
@@ -88,65 +89,66 @@ export const GitHubPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
-            GitHub
+          <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ph-text-primary)]">
+            GitHub Integration
           </h2>
           <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
-            Account connection status, repository inspector, commit activity, and project linking.
+            Account connection status, repository inspector, branches, commits, and project linking.
           </p>
         </div>
 
-        <Badge variant={isConnected ? 'success' : 'neutral'}>
+        <Badge variant={isConnected ? 'mint' : 'neutral'}>
           {isConnected ? `Connected · @${githubUsername ?? 'github'}` : 'Account not connected'}
         </Badge>
       </div>
 
-      {/* Honest Account Connection Card */}
-      <Card className="p-5">
+      {/* Honest Account Banner */}
+      <section className="rounded-2xl border border-[var(--ph-border)] bg-[linear-gradient(125deg,#EEE8FF_0%,#FFFFFF_55%,#E2F0FF_100%)] p-5 shadow-[var(--ph-shadow-sm)]">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] text-[var(--ph-text-primary)]">
+          <div className="flex items-start gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]">
               <Github className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-[var(--ph-text-primary)]">
+              <h3 className="font-display text-sm font-bold text-[var(--ph-text-primary)]">
                 {isConnected
                   ? `Signed in as @${githubUsername ?? 'GitHub User'}`
                   : 'GitHub OAuth is not connected'}
               </h3>
-              <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-[var(--ph-text-secondary)]">
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[var(--ph-text-secondary)]">
                 {isConnected
                   ? 'Your Supabase session includes GitHub identity metadata. Live repository sync uses GitHub OAuth scopes configured on your Supabase project.'
-                  : 'No live GitHub account token is active in this session. Repositories shown below are clearly marked sample previews so you can test project linking without fake API responses.'}
+                  : 'No live GitHub OAuth session is active. Repositories listed below are clearly labeled sample previews so you can test linking repositories to projects without fabricated connection claims.'}
               </p>
             </div>
           </div>
 
           {!isConnected && (
             <Button
-              variant="outline"
+              variant="primary"
               size="sm"
               onClick={handleConnectGitHub}
               disabled={connecting}
+              className="shrink-0"
             >
               <Github className="h-3.5 w-3.5" />
               <span>{connecting ? 'Redirecting...' : 'Connect GitHub'}</span>
             </Button>
           )}
         </div>
-      </Card>
+      </section>
 
-      {/* Split Workspace: Repository List + Inspector */}
+      {/* Split Workspace */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Repo List */}
+        {/* Repo Cards List */}
         <Card className="lg:col-span-5">
           <CardHeader className="border-b border-[var(--ph-border)] pb-3">
             <div className="w-full space-y-3">
               <div className="flex items-center justify-between">
-                <CardTitle>Sample Repositories</CardTitle>
-                <Badge variant="neutral">Preview data</Badge>
+                <CardTitle>Repository Previews</CardTitle>
+                <Badge variant="accent">Sample data</Badge>
               </div>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ph-text-muted)]" />
@@ -160,179 +162,178 @@ export const GitHubPage: React.FC = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="p-2">
+          <CardContent className="p-3 space-y-2">
             {filteredRepos.length === 0 ? (
               <p className="py-8 text-center text-xs text-[var(--ph-text-muted)]">
                 No repositories match &ldquo;{search}&rdquo;.
               </p>
             ) : (
-              <div className="space-y-1">
-                {filteredRepos.map((repo) => {
-                  const selected = activeRepo?.id === repo.id;
-                  return (
-                    <button
-                      key={repo.id}
-                      type="button"
-                      onClick={() => setSelectedRepoId(repo.id)}
-                      className={`w-full rounded-md p-3 text-left transition-colors cursor-pointer ${
-                        selected
-                          ? 'bg-[var(--ph-accent-soft)] text-[var(--ph-text-primary)]'
-                          : 'hover:bg-[var(--ph-bg-hover)]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate font-mono text-xs font-semibold text-[var(--ph-text-primary)]">
-                          {repo.fullName}
-                        </span>
-                        <span className="shrink-0 text-[11px] text-[var(--ph-text-muted)]">
-                          {repo.language}
-                        </span>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--ph-text-secondary)]">
-                        {repo.description}
-                      </p>
-                      <div className="mt-2 flex items-center gap-3 text-[11px] text-[var(--ph-text-muted)]">
-                        <span className="inline-flex items-center gap-1">
-                          <GitBranch className="h-3 w-3" />
-                          {repo.branch}
-                        </span>
-                        <span>{repo.openIssues} issues</span>
-                        <span>{repo.openPrs} PRs</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              filteredRepos.map((repo) => {
+                const selected = activeRepo?.id === repo.id;
+                return (
+                  <button
+                    key={repo.id}
+                    type="button"
+                    onClick={() => setSelectedRepoId(repo.id)}
+                    className={`w-full rounded-xl border p-3.5 text-left transition-all cursor-pointer ${
+                      selected
+                        ? 'border-[var(--ph-accent)] bg-[var(--ph-lavender-soft)]/50 shadow-[var(--ph-shadow-sm)]'
+                        : 'border-[var(--ph-border)] bg-white hover:border-[var(--ph-border-hover)] hover:bg-[#FAF8FF]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-mono text-xs font-bold text-[var(--ph-text-primary)]">
+                        {repo.fullName}
+                      </span>
+                      <Badge variant="sky">
+                        <Code2 className="h-3 w-3" />
+                        {repo.language}
+                      </Badge>
+                    </div>
+                    <p className="mt-1.5 line-clamp-2 text-xs text-[var(--ph-text-secondary)]">
+                      {repo.description}
+                    </p>
+                    <div className="mt-2.5 flex items-center gap-3 text-[11px] text-[var(--ph-text-muted)]">
+                      <span className="inline-flex items-center gap-1">
+                        <GitBranch className="h-3 w-3 text-[var(--ph-accent)]" />
+                        {repo.branch}
+                      </span>
+                      <span>{repo.openIssues} issues</span>
+                      <span>{repo.openPrs} PRs</span>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </CardContent>
         </Card>
 
-        {/* Inspector & Project Linker */}
+        {/* Inspector & Linker */}
         <div className="space-y-6 lg:col-span-7">
           {activeRepo ? (
-            <>
-              <Card>
-                <CardHeader className="border-b border-[var(--ph-border)] pb-4">
-                  <div>
-                    <CardTitle className="font-mono text-base">{activeRepo.fullName}</CardTitle>
-                    <CardDescription className="mt-1">{activeRepo.description}</CardDescription>
-                  </div>
-                  <Badge variant="accent">{activeRepo.branch}</Badge>
-                </CardHeader>
+            <Card>
+              <CardHeader className="border-b border-[var(--ph-border)] pb-4">
+                <div>
+                  <CardTitle className="font-mono text-base">{activeRepo.fullName}</CardTitle>
+                  <CardDescription className="mt-1">{activeRepo.description}</CardDescription>
+                </div>
+                <Badge variant="accent">{activeRepo.branch}</Badge>
+              </CardHeader>
 
-                <CardContent className="space-y-5 pt-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--ph-text-secondary)]">
-                        <AlertCircle className="h-3.5 w-3.5 text-[var(--ph-warning)]" />
-                        Open Issues
-                      </div>
-                      <p className="mt-1 font-mono text-lg font-semibold text-[var(--ph-text-primary)]">
-                        {activeRepo.openIssues}
-                      </p>
+              <CardContent className="space-y-5 pt-5">
+                {/* Pastel Stats Strip */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl bg-[var(--ph-peach-soft)] p-3.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--ph-peach-ink)]">
+                      <AlertCircle className="h-3.5 w-3.5" />
+                      Open Issues
                     </div>
-                    <div className="rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--ph-text-secondary)]">
-                        <GitPullRequest className="h-3.5 w-3.5 text-[var(--ph-info)]" />
-                        Open PRs
-                      </div>
-                      <p className="mt-1 font-mono text-lg font-semibold text-[var(--ph-text-primary)]">
-                        {activeRepo.openPrs}
-                      </p>
-                    </div>
-                    <div className="rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-3">
-                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--ph-text-secondary)]">
-                        <GitBranch className="h-3.5 w-3.5 text-[var(--ph-accent-text)]" />
-                        Last Push
-                      </div>
-                      <p className="mt-1 text-sm font-semibold text-[var(--ph-text-primary)]">
-                        {activeRepo.lastPush}
-                      </p>
-                    </div>
+                    <p className="mt-1 font-display text-xl font-bold text-[var(--ph-text-primary)] tabular-nums">
+                      {activeRepo.openIssues}
+                    </p>
                   </div>
+                  <div className="rounded-xl bg-[var(--ph-sky-soft)] p-3.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--ph-sky-ink)]">
+                      <GitPullRequest className="h-3.5 w-3.5" />
+                      Pull Requests
+                    </div>
+                    <p className="mt-1 font-display text-xl font-bold text-[var(--ph-text-primary)] tabular-nums">
+                      {activeRepo.openPrs}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--ph-mint-soft)] p-3.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--ph-mint-ink)]">
+                      <GitBranch className="h-3.5 w-3.5" />
+                      Last Push
+                    </div>
+                    <p className="mt-1 font-display text-base font-bold text-[var(--ph-text-primary)]">
+                      {activeRepo.lastPush}
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Link to Project */}
-                  <div className="rounded-md border border-[var(--ph-border)] p-4">
-                    <p className="text-xs font-semibold text-[var(--ph-text-primary)]">
-                      Link repository to a ProjectHub project
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-[var(--ph-text-secondary)]">
-                      Linked projects display repository activity directly inside their Project Detail workspace.
-                    </p>
-                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                      <div className="flex-1">
-                        <Select
-                          aria-label="Select project to link"
-                          value={linkProjectId}
-                          onChange={(e) => setLinkProjectId(e.target.value)}
-                        >
-                          <option value="">Choose a project...</option>
-                          {projects.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} {p.githubRepo === activeRepo.fullName ? '(Already linked)' : ''}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={!linkProjectId}
-                        onClick={handleLinkRepoToProject}
+                {/* Project Linker */}
+                <div className="rounded-xl border border-[var(--ph-border)] bg-[#FAF8FF] p-4">
+                  <p className="font-display text-xs font-semibold text-[var(--ph-text-primary)]">
+                    Link repository to a ProjectHub project
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[var(--ph-text-secondary)]">
+                    Linked projects surface branch and commit metadata on their Project Detail page.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <div className="flex-1">
+                      <Select
+                        aria-label="Select project to link"
+                        value={linkProjectId}
+                        onChange={(e) => setLinkProjectId(e.target.value)}
                       >
-                        <Link2 className="h-3.5 w-3.5" />
-                        Link repository
-                      </Button>
+                        <option value="">Choose a project...</option>
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}{' '}
+                            {p.githubRepo === activeRepo.fullName ? '(Already linked)' : ''}
+                          </option>
+                        ))}
+                      </Select>
                     </div>
-
-                    {projects.some((p) => p.githubRepo === activeRepo.fullName) && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--ph-text-secondary)]">
-                        <span>Linked projects:</span>
-                        {projects
-                          .filter((p) => p.githubRepo === activeRepo.fullName)
-                          .map((p) => (
-                            <Link
-                              key={p.id}
-                              to={`/projects/${p.id}`}
-                              className="rounded-md bg-[var(--ph-accent-soft)] px-2 py-0.5 font-medium text-[var(--ph-accent-text)] hover:underline"
-                            >
-                              {p.name}
-                            </Link>
-                          ))}
-                      </div>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={!linkProjectId}
+                      onClick={handleLinkRepoToProject}
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                      Link repository
+                    </Button>
                   </div>
 
-                  {/* Recent Commits */}
-                  <div>
-                    <h4 className="mb-2.5 text-xs font-semibold text-[var(--ph-text-primary)]">
-                      Recent Commits (Sample Preview)
-                    </h4>
-                    <div className="space-y-2">
-                      {activeRepo.recentCommits.map((commit) => (
-                        <div
-                          key={commit.sha}
-                          className="flex items-center justify-between gap-3 rounded-md border border-[var(--ph-border)] px-3 py-2 text-xs"
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <GitCommit className="h-3.5 w-3.5 shrink-0 text-[var(--ph-accent-text)]" />
-                            <span className="font-mono text-[11px] text-[var(--ph-text-muted)]">
-                              {commit.sha}
-                            </span>
-                            <span className="truncate text-[var(--ph-text-primary)]">
-                              {commit.message}
-                            </span>
-                          </div>
-                          <span className="shrink-0 text-[11px] text-[var(--ph-text-muted)]">
-                            {commit.timestamp}
+                  {projects.some((p) => p.githubRepo === activeRepo.fullName) && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[var(--ph-text-secondary)]">
+                      <span>Linked projects:</span>
+                      {projects
+                        .filter((p) => p.githubRepo === activeRepo.fullName)
+                        .map((p) => (
+                          <Link
+                            key={p.id}
+                            to={`/projects/${p.id}`}
+                            className="rounded-md bg-[var(--ph-lavender-soft)] px-2 py-0.5 font-medium text-[var(--ph-lavender-ink)] hover:underline"
+                          >
+                            {p.name}
+                          </Link>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Commits */}
+                <div>
+                  <h4 className="mb-2.5 font-display text-xs font-semibold text-[var(--ph-text-primary)]">
+                    Recent Commits (Sample Preview)
+                  </h4>
+                  <div className="space-y-2">
+                    {activeRepo.recentCommits.map((commit) => (
+                      <div
+                        key={commit.sha}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-[var(--ph-border)] bg-white px-3.5 py-2.5 text-xs"
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <GitCommit className="h-3.5 w-3.5 shrink-0 text-[var(--ph-accent)]" />
+                          <span className="rounded bg-[var(--ph-bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ph-text-primary)]">
+                            {commit.sha}
+                          </span>
+                          <span className="truncate text-[var(--ph-text-primary)]">
+                            {commit.message}
                           </span>
                         </div>
-                      ))}
-                    </div>
+                        <span className="shrink-0 text-[11px] text-[var(--ph-text-muted)]">
+                          {commit.timestamp}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <Card className="p-8 text-center text-xs text-[var(--ph-text-muted)]">
               Select a repository to inspect details.

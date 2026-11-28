@@ -1,45 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #F7F5FF;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ProjectHub — Personal Project &amp; Productivity Workspace</title>
     <meta
       name="description"
-      content="A calm, minimal personal workspace for projects, tasks, deadlines, GitHub repositories, notes, and productivity."
+      content="A bright, minimal personal workspace for projects, tasks, deadlines, GitHub repositories, notes, and productivity."
     />
     <meta property="og:title" content="ProjectHub — Personal Project &amp; Productivity Workspace" />
     <meta
       property="og:description"
-      content="A calm, minimal personal workspace for projects, tasks, deadlines, GitHub repositories, notes, and productivity."
+      content="A bright, minimal personal workspace for projects, tasks, deadlines, GitHub repositories, notes, and productivity."
     />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Prevent theme flashing before first paint -->
-    <script>
-      (function () {
-        try {
-          var key = 'projecthub-theme';
-          var stored = localStorage.getItem(key);
-          var theme = stored === 'dark' || stored === 'light' || stored === 'system' ? stored : 'light';
-          var isDark =
-            theme === 'dark' ||
-            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          var root = document.documentElement;
-          if (isDark) {
-            root.classList.add('dark');
-            root.style.backgroundColor = '#15131C';
-          } else {
-            root.classList.remove('dark');
-            root.style.backgroundColor = '#F8F7FC';
-          }
-        } catch (e) {}
-      })();
-    </script>
-
-    <!-- PWA & Mobile Capability -->
-    <meta name="theme-color" content="#F8F7FC" />
+    <!-- PWA & Mobile Capability (Light Only) -->
+    <meta name="theme-color" content="#F7F5FF" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -47,11 +25,11 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
 
-    <!-- Fonts: Inter (UI & Editorial Typography) + JetBrains Mono (Dates, Counts, Repos) -->
+    <!-- Fonts: Plus Jakarta Sans (Display/UI), DM Sans (Body), JetBrains Mono (Data/Dates) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
   </head>

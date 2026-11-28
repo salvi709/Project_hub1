@@ -7,12 +7,24 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        neutral: 'bg-[var(--ph-bg-secondary)] text-[var(--ph-text-secondary)] border border-[var(--ph-border)]',
-        accent: 'bg-[var(--ph-accent-soft)] text-[var(--ph-accent-text)]',
-        success: 'bg-[var(--ph-success-soft)] text-[var(--ph-success)]',
-        warning: 'bg-[var(--ph-warning-soft)] text-[var(--ph-warning)]',
-        error: 'bg-[var(--ph-error-soft)] text-[var(--ph-error)]',
-        info: 'bg-[var(--ph-info-soft)] text-[var(--ph-info)]',
+        neutral:
+          'bg-[var(--ph-bg-secondary)] text-[var(--ph-text-secondary)]',
+        accent:
+          'bg-[var(--ph-lavender-soft)] text-[var(--ph-lavender-ink)]',
+        peach:
+          'bg-[var(--ph-peach-soft)] text-[var(--ph-peach-ink)]',
+        mint:
+          'bg-[var(--ph-mint-soft)] text-[var(--ph-mint-ink)]',
+        sky:
+          'bg-[var(--ph-sky-soft)] text-[var(--ph-sky-ink)]',
+        success:
+          'bg-[var(--ph-success-soft)] text-[var(--ph-mint-ink)]',
+        warning:
+          'bg-[var(--ph-warning-soft)] text-[#9B6218]',
+        error:
+          'bg-[var(--ph-error-soft)] text-[#B53D3D]',
+        info:
+          'bg-[var(--ph-info-soft)] text-[var(--ph-sky-ink)]',
       },
     },
     defaultVariants: {

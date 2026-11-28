@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowUpRight,
   Calendar,
   Edit3,
   FolderKanban,
@@ -14,13 +15,13 @@ import {
 } from 'lucide-react';
 import type { PriorityLevel, ProjectStatus } from '../types/database';
 import type { WorkspaceProject } from '../types/domain';
-import { formatShortDate } from '../lib/date';
+import { formatShortDate, isOverdueISO } from '../lib/date';
+import { getProjectVisual } from '../lib/projectVisuals';
 import { PRIORITY_META, PROJECT_STATUS_META } from '../lib/statusMeta';
 import { useWorkspace } from '../features/workspace/WorkspaceContext';
 import { ProjectFormDialog } from '../components/projects/ProjectFormDialog';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +54,15 @@ export const ProjectsPage: React.FC = () => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<WorkspaceProject | null>(null);
+
+  const summary = useMemo(() => {
+    const active = projects.filter((p) => p.status === 'active').length;
+    const completed = projects.filter((p) => p.status === 'completed').length;
+    const overdue = projects.filter(
+      (p) => p.status !== 'completed' && p.status !== 'archived' && isOverdueISO(p.targetDate)
+    ).length;
+    return { total: projects.length, active, completed, overdue };
+  }, [projects]);
 
   const filteredProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -94,37 +104,65 @@ export const ProjectsPage: React.FC = () => {
     toast({
       title: 'Project deleted',
       description: `${project.name} was removed from your workspace.`,
-      variant: 'default',
     });
   };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
-            My Projects
-          </h2>
-          <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
-            {projects.length} project{projects.length === 1 ? '' : 's'} with deadlines, task progress, and linked repositories.
-          </p>
+      {/* Pastel Hero Header */}
+      <section className="rounded-2xl border border-[var(--ph-border)] bg-[linear-gradient(120deg,#EEE8FF_0%,#FFFFFF_55%,#E2F0FF_100%)] p-5 shadow-[var(--ph-shadow-sm)] sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ph-text-primary)]">
+              My Projects
+            </h2>
+            <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
+              Manage deliverables, progress milestones, and linked GitHub repositories.
+            </p>
+          </div>
+          <Button size="md" onClick={handleCreate}>
+            <Plus className="h-4 w-4" />
+            <span>New Project</span>
+          </Button>
         </div>
 
-        <Button size="sm" onClick={handleCreate}>
-          <Plus className="h-3.5 w-3.5" />
-          <span>New Project</span>
-        </Button>
-      </div>
+        {/* Compact Summary Row */}
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[var(--ph-border)] bg-white/85 px-4 py-2.5">
+            <p className="text-[11px] font-medium text-[var(--ph-text-secondary)]">Total Projects</p>
+            <p className="mt-0.5 font-display text-lg font-bold text-[var(--ph-text-primary)] tabular-nums">
+              {summary.total}
+            </p>
+          </div>
+          <div className="rounded-xl border border-[var(--ph-border)] bg-white/85 px-4 py-2.5">
+            <p className="text-[11px] font-medium text-[var(--ph-text-secondary)]">Active</p>
+            <p className="mt-0.5 font-display text-lg font-bold text-[var(--ph-lavender-ink)] tabular-nums">
+              {summary.active}
+            </p>
+          </div>
+          <div className="rounded-xl border border-[var(--ph-border)] bg-white/85 px-4 py-2.5">
+            <p className="text-[11px] font-medium text-[var(--ph-text-secondary)]">Completed</p>
+            <p className="mt-0.5 font-display text-lg font-bold text-[var(--ph-mint-ink)] tabular-nums">
+              {summary.completed}
+            </p>
+          </div>
+          <div className="rounded-xl border border-[var(--ph-border)] bg-white/85 px-4 py-2.5">
+            <p className="text-[11px] font-medium text-[var(--ph-text-secondary)]">Overdue</p>
+            <p className="mt-0.5 font-display text-lg font-bold text-[var(--ph-peach-ink)] tabular-nums">
+              {summary.overdue}
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* Controls Toolbar */}
-      <div className="flex flex-col gap-3 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-card)] p-3 lg:flex-row lg:items-center lg:justify-between">
+      {/* Filters Toolbar */}
+      <div className="flex flex-col gap-3 rounded-xl border border-[var(--ph-border)] bg-white p-3 shadow-[var(--ph-shadow-sm)] lg:flex-row lg:items-center lg:justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ph-text-muted)]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter by name, category, or description..."
+            placeholder="Search projects by name, category, or description..."
             className="pl-8"
           />
         </div>
@@ -171,14 +209,14 @@ export const ProjectsPage: React.FC = () => {
             </Select>
           </div>
 
-          <div className="inline-flex rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
+          <div className="inline-flex rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               aria-label="Grid view"
-              className={`rounded-sm p-1.5 transition-colors cursor-pointer ${
+              className={`rounded-md p-1.5 transition-colors cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                  ? 'bg-white text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
                   : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
               }`}
             >
@@ -188,9 +226,9 @@ export const ProjectsPage: React.FC = () => {
               type="button"
               onClick={() => setViewMode('list')}
               aria-label="List view"
-              className={`rounded-sm p-1.5 transition-colors cursor-pointer ${
+              className={`rounded-md p-1.5 transition-colors cursor-pointer ${
                 viewMode === 'list'
-                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                  ? 'bg-white text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
                   : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
               }`}
             >
@@ -200,7 +238,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Grid / List */}
       {filteredProjects.length === 0 ? (
         <EmptyState
           icon={<FolderKanban className="h-5 w-5" />}
@@ -232,95 +270,119 @@ export const ProjectsPage: React.FC = () => {
           }
         />
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
           {filteredProjects.map((project) => {
             const progress = getProjectProgress(project.id);
             const statusMeta = PROJECT_STATUS_META[project.status];
             const priorityMeta = PRIORITY_META[project.priority];
+            const visual = getProjectVisual(project.category, project.id);
+            const Icon = visual.Icon;
             const projectTasks = tasks.filter((t) => t.projectId === project.id);
             const doneCount = projectTasks.filter((t) => t.status === 'completed').length;
 
             return (
-              <Card key={project.id} className="flex flex-col justify-between p-5 hover:border-[var(--ph-border-hover)]">
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-                      <Badge variant={priorityMeta.variant}>{priorityMeta.label}</Badge>
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          aria-label={`Actions for ${project.name}`}
-                          className="rounded-md p-1 text-[var(--ph-text-muted)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleEdit(project)}>
-                          <Edit3 className="h-3.5 w-3.5" />
-                          <span>Edit project</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onSelect={() => handleDelete(project)}
-                          className="text-[var(--ph-error)]"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          <span>Delete project</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <Link
-                    to={`/projects/${project.id}`}
-                    className="mt-3 block text-base font-semibold tracking-tight text-[var(--ph-text-primary)] hover:text-[var(--ph-accent-text)] transition-colors"
-                  >
-                    {project.name}
-                  </Link>
-                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[var(--ph-text-secondary)]">
-                    {project.description || 'No project description provided.'}
-                  </p>
+              <article
+                key={project.id}
+                className="group flex flex-col justify-between overflow-hidden rounded-xl border border-[var(--ph-border)] bg-white shadow-[var(--ph-shadow-sm)] transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--ph-border-hover)] hover:shadow-[var(--ph-shadow-md)]"
+              >
+                {/* Top Pastel Accent Bar */}
+                <div className="h-1.5 w-full" style={{ backgroundColor: visual.softBg }}>
+                  <div
+                    className="h-full transition-all duration-300"
+                    style={{ width: `${progress}%`, backgroundColor: visual.barColor }}
+                  />
                 </div>
 
-                <div className="mt-5 space-y-3 pt-4 border-t border-[var(--ph-border)]">
+                <div className="flex flex-1 flex-col justify-between p-5">
                   <div>
-                    <div className="mb-1.5 flex items-center justify-between text-xs">
-                      <span className="text-[var(--ph-text-secondary)]">
-                        {doneCount}/{projectTasks.length} tasks completed
-                      </span>
-                      <span className="font-mono font-medium text-[var(--ph-text-primary)] tabular-nums">
-                        {progress}%
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: visual.softBg, color: visual.inkColor }}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-[var(--ph-text-secondary)]">
+                            {project.category} · {priorityMeta.label} priority
+                          </p>
+                          <Link
+                            to={`/projects/${project.id}`}
+                            className="mt-0.5 inline-flex items-center gap-1 font-display text-base font-semibold tracking-tight text-[var(--ph-text-primary)] group-hover:text-[var(--ph-accent-hover)] transition-colors"
+                          >
+                            <span className="truncate">{project.name}</span>
+                            <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                          </Link>
+                        </div>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Actions for ${project.name}`}
+                            className="rounded-lg p-1.5 text-[var(--ph-text-muted)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleEdit(project)}>
+                            <Edit3 className="h-3.5 w-3.5" />
+                            <span>Edit project</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => handleDelete(project)}
+                            className="text-[var(--ph-error)]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete project</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-[var(--ph-text-secondary)]">
+                      {project.description || 'No project description provided.'}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 space-y-3 pt-4 border-t border-[var(--ph-border)]">
+                    <div className="flex items-center justify-between">
+                      <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                      <span className="font-mono text-xs font-semibold text-[var(--ph-text-primary)] tabular-nums">
+                        {progress}% complete
                       </span>
                     </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
+
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
                       <div
-                        className="h-full rounded-full bg-[var(--ph-accent)] transition-all duration-300"
-                        style={{ width: `${progress}%` }}
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%`, backgroundColor: visual.barColor }}
                       />
                     </div>
-                  </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--ph-text-secondary)]">
-                    <span className="inline-flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-[var(--ph-text-muted)]" />
-                      {formatShortDate(project.targetDate)}
-                    </span>
-                    {project.githubRepo ? (
-                      <span className="inline-flex items-center gap-1 truncate font-mono text-[11px] text-[var(--ph-text-muted)]">
-                        <GitBranch className="h-3 w-3 shrink-0" />
-                        {project.githubRepo}
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--ph-text-secondary)]">
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        <Calendar className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
+                        Due {formatShortDate(project.targetDate)}
+                        <span className="text-[var(--ph-text-muted)]">
+                          · {doneCount}/{projectTasks.length} tasks
+                        </span>
                       </span>
-                    ) : (
-                      <span className="text-[var(--ph-text-muted)]">{project.category}</span>
-                    )}
+
+                      {project.githubRepo && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-[var(--ph-bg-secondary)] px-2 py-0.5 font-mono text-[10px] text-[var(--ph-text-primary)]">
+                          <GitBranch className="h-3 w-3 text-[var(--ph-accent)]" />
+                          {project.githubRepo.split('/')[1] ?? project.githubRepo}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </Card>
+              </article>
             );
           })}
         </div>
@@ -342,17 +404,29 @@ export const ProjectsPage: React.FC = () => {
               const progress = getProjectProgress(project.id);
               const statusMeta = PROJECT_STATUS_META[project.status];
               const priorityMeta = PRIORITY_META[project.priority];
+              const visual = getProjectVisual(project.category, project.id);
+              const Icon = visual.Icon;
 
               return (
                 <TableRow key={project.id}>
                   <TableCell>
-                    <Link
-                      to={`/projects/${project.id}`}
-                      className="font-medium text-[var(--ph-text-primary)] hover:text-[var(--ph-accent-text)] transition-colors"
-                    >
-                      {project.name}
-                    </Link>
-                    <p className="text-[11px] text-[var(--ph-text-muted)]">{project.category}</p>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                        style={{ backgroundColor: visual.softBg, color: visual.inkColor }}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className="font-semibold text-[var(--ph-text-primary)] hover:text-[var(--ph-accent-hover)] transition-colors"
+                        >
+                          {project.name}
+                        </Link>
+                        <p className="text-[11px] text-[var(--ph-text-muted)]">{project.category}</p>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
@@ -364,8 +438,8 @@ export const ProjectsPage: React.FC = () => {
                     <div className="flex items-center gap-2.5 w-32">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
                         <div
-                          className="h-full rounded-full bg-[var(--ph-accent)]"
-                          style={{ width: `${progress}%` }}
+                          className="h-full rounded-full"
+                          style={{ width: `${progress}%`, backgroundColor: visual.barColor }}
                         />
                       </div>
                       <span className="font-mono text-xs tabular-nums text-[var(--ph-text-secondary)]">
@@ -373,7 +447,7 @@ export const ProjectsPage: React.FC = () => {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-[var(--ph-text-secondary)]">
+                  <TableCell className="font-mono text-xs text-[var(--ph-text-secondary)]">
                     {formatShortDate(project.targetDate)}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-[var(--ph-text-muted)]">

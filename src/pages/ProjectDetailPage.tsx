@@ -15,6 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { formatFullDate, formatShortDate } from '../lib/date';
+import { getProjectVisual } from '../lib/projectVisuals';
 import { PRIORITY_META, PROJECT_STATUS_META, TASK_STATUS_META } from '../lib/statusMeta';
 import { SAMPLE_REPOS } from '../features/github/sampleRepos';
 import { useAuth } from '../features/auth/AuthContext';
@@ -98,6 +99,8 @@ export const ProjectDetailPage: React.FC = () => {
   const progress = getProjectProgress(project.id);
   const statusMeta = PROJECT_STATUS_META[project.status];
   const priorityMeta = PRIORITY_META[project.priority];
+  const visual = getProjectVisual(project.category, project.id);
+  const Icon = visual.Icon;
 
   const completedTasks = projectTasks.filter((t) => t.status === 'completed').length;
   const inProgressTasks = projectTasks.filter((t) => t.status === 'in_progress').length;
@@ -111,79 +114,100 @@ export const ProjectDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 border-b border-[var(--ph-border)] pb-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
-            <Badge variant={priorityMeta.variant}>{priorityMeta.label} priority</Badge>
-            <span className="text-xs text-[var(--ph-text-muted)]">{project.category}</span>
+      {/* Pastel Header Card */}
+      <section
+        className="rounded-2xl border border-[var(--ph-border)] p-5 shadow-[var(--ph-shadow-sm)] sm:p-6"
+        style={{
+          background: `linear-gradient(125deg, ${visual.softBg} 0%, #FFFFFF 60%)`,
+        }}
+      >
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white shadow-[var(--ph-shadow-sm)]"
+              style={{ color: visual.inkColor }}
+            >
+              <Icon className="h-6 w-6" />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                <Badge variant={priorityMeta.variant}>{priorityMeta.label} priority</Badge>
+                <span className="text-xs text-[var(--ph-text-secondary)]">{project.category}</span>
+              </div>
+
+              <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ph-text-primary)]">
+                {project.name}
+              </h2>
+              <p className="max-w-2xl text-sm leading-relaxed text-[var(--ph-text-secondary)]">
+                {project.description || 'No description added for this project yet.'}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[var(--ph-text-secondary)]">
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
+                  Target deadline: {formatFullDate(project.targetDate)}
+                </span>
+                {project.githubRepo && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-white/80 px-2 py-0.5 font-mono text-[11px] text-[var(--ph-text-primary)]">
+                    <GitBranch className="h-3.5 w-3.5 text-[var(--ph-accent)]" />
+                    {project.githubRepo}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <h2 className="text-2xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
-            {project.name}
-          </h2>
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--ph-text-secondary)]">
-            {project.description || 'No description added for this project yet.'}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditProjectOpen(true)}
+              className="bg-white/90 hover:bg-white"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              Edit Project
+            </Button>
+            <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              Add Task
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Delete project"
+              onClick={handleDeleteProject}
+              className="text-[var(--ph-text-muted)] hover:text-[var(--ph-error)]"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-[var(--ph-text-secondary)]">
-            <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
-              Target deadline: {formatFullDate(project.targetDate)}
+        {/* Completion Progress */}
+        <div className="mt-6 rounded-xl border border-[var(--ph-border)] bg-white/90 p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold text-[var(--ph-text-primary)]">
+                Project Completion
+              </p>
+              <p className="text-xs text-[var(--ph-text-secondary)]">
+                {completedTasks} completed · {inProgressTasks} in progress · {todoTasks} to do
+              </p>
+            </div>
+            <span className="font-mono text-xl font-bold text-[var(--ph-text-primary)] tabular-nums">
+              {progress}%
             </span>
-            {project.githubRepo && (
-              <span className="inline-flex items-center gap-1.5 font-mono">
-                <GitBranch className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
-                {project.githubRepo}
-              </span>
-            )}
+          </div>
+          <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{ width: `${progress}%`, backgroundColor: visual.barColor }}
+            />
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setEditProjectOpen(true)}>
-            <Edit3 className="h-3.5 w-3.5" />
-            Edit Project
-          </Button>
-          <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            Add Task
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Delete project"
-            onClick={handleDeleteProject}
-            className="text-[var(--ph-text-muted)] hover:text-[var(--ph-error)]"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Progress Strip */}
-      <Card className="p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-medium text-[var(--ph-text-secondary)]">
-              Project Completion
-            </p>
-            <p className="mt-0.5 text-sm text-[var(--ph-text-primary)]">
-              {completedTasks} completed · {inProgressTasks} in progress · {todoTasks} to do
-            </p>
-          </div>
-          <span className="font-mono text-2xl font-semibold text-[var(--ph-text-primary)] tabular-nums">
-            {progress}%
-          </span>
-        </div>
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
-          <div
-            className="h-full rounded-full bg-[var(--ph-accent)] transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </Card>
+      </section>
 
       {/* Tabs */}
       <Tabs defaultValue="tasks">
@@ -229,7 +253,7 @@ export const ProjectDetailPage: React.FC = () => {
                           aria-label={`Toggle completion for ${task.title}`}
                           className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors cursor-pointer ${
                             isDone
-                              ? 'border-[var(--ph-accent)] bg-[var(--ph-accent)] text-[var(--ph-accent-foreground)]'
+                              ? 'border-[var(--ph-accent)] bg-[var(--ph-accent)] text-white'
                               : 'border-[var(--ph-border-hover)] hover:border-[var(--ph-accent)]'
                           }`}
                         >
@@ -295,7 +319,7 @@ export const ProjectDetailPage: React.FC = () => {
                 projectNotes.map((note) => (
                   <Card key={note.id} className="p-4">
                     <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-semibold text-[var(--ph-text-primary)]">
+                      <h4 className="font-display text-sm font-semibold text-[var(--ph-text-primary)]">
                         {note.title}
                       </h4>
                       <span className="text-[11px] text-[var(--ph-text-muted)]">
@@ -331,7 +355,7 @@ export const ProjectDetailPage: React.FC = () => {
                           href={link.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-between gap-2 rounded-md border border-[var(--ph-border)] px-3 py-2 text-xs hover:border-[var(--ph-border-hover)] hover:bg-[var(--ph-bg-hover)] transition-colors"
+                          className="flex items-center justify-between gap-2 rounded-lg border border-[var(--ph-border)] px-3 py-2 text-xs hover:border-[var(--ph-border-hover)] hover:bg-[var(--ph-bg-hover)] transition-colors"
                         >
                           <div className="min-w-0">
                             <p className="truncate font-medium text-[var(--ph-text-primary)]">
@@ -381,7 +405,7 @@ export const ProjectDetailPage: React.FC = () => {
                 />
               ) : linkedRepo ? (
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--ph-border)] bg-[#FAF8FF] p-4">
                     <div>
                       <p className="font-mono text-sm font-semibold text-[var(--ph-text-primary)]">
                         {linkedRepo.fullName}
@@ -392,22 +416,22 @@ export const ProjectDetailPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-xs">
                       <Badge variant="accent">{linkedRepo.branch}</Badge>
-                      <Badge variant="neutral">{linkedRepo.openIssues} issues</Badge>
-                      <Badge variant="info">{linkedRepo.openPrs} PRs</Badge>
+                      <Badge variant="peach">{linkedRepo.openIssues} issues</Badge>
+                      <Badge variant="sky">{linkedRepo.openPrs} PRs</Badge>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-[var(--ph-text-secondary)]">
+                    <p className="text-xs font-semibold text-[var(--ph-text-secondary)]">
                       Sample Commit Preview
                     </p>
                     {linkedRepo.recentCommits.map((commit) => (
                       <div
                         key={commit.sha}
-                        className="flex items-center justify-between gap-3 rounded-md border border-[var(--ph-border)] px-3 py-2 text-xs"
+                        className="flex items-center justify-between gap-3 rounded-lg border border-[var(--ph-border)] px-3 py-2 text-xs"
                       >
                         <div className="flex min-w-0 items-center gap-2">
-                          <GitCommit className="h-3.5 w-3.5 shrink-0 text-[var(--ph-accent-text)]" />
+                          <GitCommit className="h-3.5 w-3.5 shrink-0 text-[var(--ph-accent)]" />
                           <span className="font-mono text-[11px] text-[var(--ph-text-muted)]">
                             {commit.sha}
                           </span>
@@ -423,7 +447,7 @@ export const ProjectDetailPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md border border-[var(--ph-border)] p-4 text-xs text-[var(--ph-text-secondary)]">
+                <div className="rounded-lg border border-[var(--ph-border)] p-4 text-xs text-[var(--ph-text-secondary)]">
                   Linked repository <span className="font-mono font-medium">{project.githubRepo}</span>.
                   Connect GitHub OAuth in Settings to fetch live commits and pull requests.
                 </div>
@@ -434,7 +458,7 @@ export const ProjectDetailPage: React.FC = () => {
 
         <TabsContent value="timeline">
           <Card className="p-5">
-            <h4 className="text-sm font-semibold text-[var(--ph-text-primary)]">
+            <h4 className="font-display text-sm font-semibold text-[var(--ph-text-primary)]">
               Milestone Timeline
             </h4>
             <div className="mt-4 space-y-4 border-l border-[var(--ph-border)] pl-4">
@@ -463,7 +487,7 @@ export const ProjectDetailPage: React.FC = () => {
                   </div>
                 ))}
               <div>
-                <p className="text-xs font-semibold text-[var(--ph-accent-text)]">
+                <p className="text-xs font-semibold text-[var(--ph-lavender-ink)]">
                   Target Completion Date
                 </p>
                 <p className="text-[11px] text-[var(--ph-text-secondary)]">

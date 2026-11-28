@@ -9,16 +9,16 @@ import type {
 export const SAMPLE_TASKS: WorkspaceTask[] = [
   {
     id: 'task-sample-1',
-    title: 'Finalize Soft Lavender dual-theme token audit',
+    title: 'Finalize Fresh Lavender token & contrast audit',
     description:
-      'Verify light (#F8F7FC) and dark (#15131C) contrast ratios across cards, tooltips, badges, and interactive forms.',
+      'Verify light canvas (#F7F5FF) and white surface (#FFFFFF) contrast ratios across cards, pastel badges, and interactive forms.',
     projectId: 'proj-sample-1',
     status: 'in_progress',
     priority: 'high',
     dueDate: offsetISODate(0),
     subtasks: [
-      { id: 'sub-1', title: 'Audit light mode surface hierarchy', completed: true },
-      { id: 'sub-2', title: 'Audit dark mode semantic badges', completed: true },
+      { id: 'sub-1', title: 'Audit pastel surface hierarchy', completed: true },
+      { id: 'sub-2', title: 'Verify mint, peach, and sky badge contrast', completed: true },
       { id: 'sub-3', title: 'Verify focus ring contrast', completed: false },
     ],
     createdAt: offsetISODate(-4),
@@ -118,15 +118,15 @@ export const SAMPLE_TASKS: WorkspaceTask[] = [
 export const SAMPLE_NOTES: WorkspaceNote[] = [
   {
     id: 'note-sample-1',
-    title: 'Soft Lavender Design Principles',
+    title: 'Fresh Lavender Design Principles',
     content:
-      'Keep primary surfaces calm (#F8F7FC in light, #15131C in dark). Reserve lavender accents (#A78BFA / #B69AFF) strictly for primary actions, active navigation states, selected calendar dates, and progress indicators. Use muted semantic tones for status badges.',
+      'Keep primary surfaces airy (#F7F5FF canvas, #FFFFFF cards). Use #9272E8 for primary actions and active navigation states, and balance visual hierarchy with soft peach, mint, and sky blue pastels.',
     projectId: 'proj-sample-1',
     resourceLinks: [
-      { label: 'Inter Font Pairing', url: 'https://rsms.me/inter/' },
+      { label: 'Plus Jakarta Sans', url: 'https://fonts.google.com/specimen/Plus+Jakarta+Sans' },
       { label: 'WCAG Contrast Checker', url: 'https://webaim.org/resources/contrastchecker/' },
     ],
-    attachmentNames: ['lavender-tokens-v2.json', 'typography-scale.md'],
+    attachmentNames: ['fresh-lavender-tokens.json', 'typography-scale.md'],
     updatedAt: offsetISODate(0),
     isSample: true,
   },
@@ -163,7 +163,7 @@ export const SAMPLE_ACTIVITY: WorkspaceActivityItem[] = [
     id: 'act-sample-1',
     actor: 'You',
     action: 'updated task',
-    target: 'Finalize Soft Lavender dual-theme token audit',
+    target: 'Finalize Fresh Lavender token & contrast audit',
     context: 'ProjectHub Core',
     timestamp: 'Today · 10:24 AM',
     category: 'task',
@@ -205,7 +205,7 @@ export const SAMPLE_NOTIFICATIONS: SampleNotification[] = [
   {
     id: 'notif-1',
     title: '2 tasks due today',
-    detail: 'Soft Lavender token audit & Redis sliding-window rate limiter.',
+    detail: 'Fresh Lavender token audit & Redis sliding-window rate limiter.',
     timestamp: 'Today',
     read: false,
   },

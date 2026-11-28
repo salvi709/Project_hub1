@@ -12,10 +12,10 @@ export const AuthPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--ph-bg-primary)] px-4 py-10">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[linear-gradient(135deg,#EEE8FF_0%,#F7F5FF_52%,#FFE8DC_100%)] px-4 py-10">
       <div className="mb-8 flex flex-col items-center text-center">
         <BrandLogo />
-        <p className="mt-2 text-xs text-[var(--ph-text-muted)]">
+        <p className="mt-2.5 text-xs font-medium text-[var(--ph-text-secondary)]">
           Centralized personal project &amp; productivity workspace
         </p>
       </div>

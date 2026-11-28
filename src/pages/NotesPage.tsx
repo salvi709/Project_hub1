@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatShortDate } from '../lib/date';
+import { getProjectVisual } from '../lib/projectVisuals';
 import { useWorkspace } from '../features/workspace/WorkspaceContext';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -29,7 +30,6 @@ export const NotesPage: React.FC = () => {
   const [projectFilter, setProjectFilter] = useState('all');
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(notes[0]?.id ?? null);
 
-  // Editor form state
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [projectId, setProjectId] = useState('');
@@ -146,26 +146,26 @@ export const NotesPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
+          <h2 className="font-display text-2xl font-bold tracking-tight text-[var(--ph-text-primary)]">
             Notes &amp; Resources
           </h2>
           <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
-            Organize project specs, technical notes, reference URLs, and attachment metadata.
+            Capture specifications, architecture notes, reference links, and attachments.
           </p>
         </div>
 
-        <Button size="sm" onClick={handleNewNote}>
-          <Plus className="h-3.5 w-3.5" />
+        <Button size="md" onClick={handleNewNote}>
+          <Plus className="h-4 w-4" />
           New Note
         </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left List */}
+        {/* Note Cards Column */}
         <Card className="flex flex-col lg:col-span-4">
-          <div className="space-y-2.5 border-b border-[var(--ph-border)] p-3">
+          <div className="space-y-2.5 border-b border-[var(--ph-border)] p-3.5">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ph-text-muted)]" />
               <Input
@@ -191,7 +191,7 @@ export const NotesPage: React.FC = () => {
             </Select>
           </div>
 
-          <div className="flex-1 divide-y divide-[var(--ph-border)] overflow-y-auto p-2 max-h-[560px]">
+          <div className="flex-1 space-y-2 overflow-y-auto p-3 max-h-[580px]">
             {filteredNotes.length === 0 ? (
               <p className="py-10 text-center text-xs text-[var(--ph-text-muted)]">
                 No notes match the current filter.
@@ -200,35 +200,51 @@ export const NotesPage: React.FC = () => {
               filteredNotes.map((note) => {
                 const selected = selectedNoteId === note.id;
                 const proj = getProjectById(note.projectId);
+                const visual = proj
+                  ? getProjectVisual(proj.category, proj.id)
+                  : getProjectVisual('docs', note.id);
+
                 return (
                   <button
                     key={note.id}
                     type="button"
                     onClick={() => setSelectedNoteId(note.id)}
-                    className={`w-full rounded-md p-3 text-left transition-colors cursor-pointer ${
-                      selected ? 'bg-[var(--ph-accent-soft)]' : 'hover:bg-[var(--ph-bg-hover)]'
+                    className={`w-full rounded-xl border p-3.5 text-left transition-all cursor-pointer ${
+                      selected
+                        ? 'border-[var(--ph-accent)] shadow-[var(--ph-shadow-sm)]'
+                        : 'border-[var(--ph-border)] bg-white hover:border-[var(--ph-border-hover)]'
                     }`}
+                    style={{
+                      backgroundColor: selected ? visual.surfaceTint : '#FFFFFF',
+                    }}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium text-[var(--ph-text-primary)]">
-                        {note.title}
+                      <span
+                        className="rounded-md px-2 py-0.5 text-[10px] font-semibold"
+                        style={{ backgroundColor: visual.softBg, color: visual.inkColor }}
+                      >
+                        {proj?.name ?? 'General'}
                       </span>
-                      <span className="shrink-0 text-[10px] text-[var(--ph-text-muted)]">
+                      <span className="shrink-0 font-mono text-[10px] text-[var(--ph-text-muted)]">
                         {formatShortDate(note.updatedAt)}
                       </span>
                     </div>
+                    <h4 className="mt-2 truncate font-display text-sm font-semibold text-[var(--ph-text-primary)]">
+                      {note.title}
+                    </h4>
                     <p className="mt-1 line-clamp-2 text-xs text-[var(--ph-text-secondary)]">
                       {note.content || 'Empty note'}
                     </p>
-                    <div className="mt-2 flex items-center gap-2 text-[10px] text-[var(--ph-text-muted)]">
-                      <span>{proj?.name ?? 'General'}</span>
-                      {note.resourceLinks.length > 0 && (
-                        <span>· {note.resourceLinks.length} links</span>
-                      )}
-                      {note.attachmentNames.length > 0 && (
-                        <span>· {note.attachmentNames.length} files</span>
-                      )}
-                    </div>
+                    {(note.resourceLinks.length > 0 || note.attachmentNames.length > 0) && (
+                      <div className="mt-2 flex items-center gap-2 text-[10px] text-[var(--ph-text-muted)]">
+                        {note.resourceLinks.length > 0 && (
+                          <span>{note.resourceLinks.length} links</span>
+                        )}
+                        {note.attachmentNames.length > 0 && (
+                          <span>· {note.attachmentNames.length} attachments</span>
+                        )}
+                      </div>
+                    )}
                   </button>
                 );
               })
@@ -236,8 +252,8 @@ export const NotesPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Editor */}
-        <Card className="p-5 lg:col-span-8">
+        {/* Note Editor */}
+        <Card className="p-5 sm:p-6 lg:col-span-8">
           {selectedNoteId === null && notes.length === 0 ? (
             <EmptyState
               icon={<FileText className="h-5 w-5" />}
@@ -259,7 +275,7 @@ export const NotesPage: React.FC = () => {
                     placeholder="Note title..."
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="text-base font-semibold"
+                    className="font-display text-base font-semibold"
                   />
                 </div>
                 <div className="w-full sm:w-48">
@@ -282,30 +298,28 @@ export const NotesPage: React.FC = () => {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write specifications, research notes, or action items..."
-                className="min-h-[200px] leading-relaxed"
+                className="min-h-[210px] leading-relaxed"
               />
 
               {/* Resource Links */}
-              <div className="space-y-3 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-4">
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ph-text-primary)]">
-                    <Link2 className="h-3.5 w-3.5 text-[var(--ph-accent-text)]" />
-                    Resource Links ({resourceLinks.length})
-                  </span>
-                </div>
+              <div className="space-y-3 rounded-xl border border-[var(--ph-border)] bg-[#F5FAFF] p-4">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ph-sky-ink)]">
+                  <Link2 className="h-3.5 w-3.5" />
+                  Resource Links ({resourceLinks.length})
+                </span>
 
                 {resourceLinks.length > 0 && (
                   <div className="space-y-1.5">
                     {resourceLinks.map((link, idx) => (
                       <div
                         key={`${link.url}-${idx}`}
-                        className="flex items-center justify-between gap-2 rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-card)] px-3 py-1.5 text-xs"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-[var(--ph-border)] bg-white px-3 py-2 text-xs"
                       >
                         <a
                           href={link.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex min-w-0 items-center gap-1.5 font-medium text-[var(--ph-accent-text)] hover:underline"
+                          className="inline-flex min-w-0 items-center gap-1.5 font-medium text-[var(--ph-sky-ink)] hover:underline"
                         >
                           <span className="truncate">{link.label}</span>
                           <ExternalLink className="h-3 w-3 shrink-0" />
@@ -316,7 +330,7 @@ export const NotesPage: React.FC = () => {
                             setResourceLinks((prev) => prev.filter((_, i) => i !== idx))
                           }
                           aria-label="Remove link"
-                          className="text-[var(--ph-text-muted)] hover:text-[var(--ph-error)] cursor-pointer"
+                          className="text-[var(--ph-text-muted)] hover:text-[#B53D3D] cursor-pointer"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -330,20 +344,20 @@ export const NotesPage: React.FC = () => {
                     placeholder="Link label (e.g., API Spec)"
                     value={newLinkLabel}
                     onChange={(e) => setNewLinkLabel(e.target.value)}
-                    className="h-8 text-xs sm:col-span-4"
+                    className="h-8 bg-white text-xs sm:col-span-4"
                   />
                   <Input
                     placeholder="https://..."
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
-                    className="h-8 text-xs sm:col-span-6"
+                    className="h-8 bg-white text-xs sm:col-span-6"
                   />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handleAddLink}
-                    className="sm:col-span-2"
+                    className="bg-white sm:col-span-2"
                   >
                     Add link
                   </Button>
@@ -351,16 +365,16 @@ export const NotesPage: React.FC = () => {
               </div>
 
               {/* Attachment Metadata */}
-              <div className="space-y-3 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-4">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ph-text-primary)]">
-                  <Paperclip className="h-3.5 w-3.5 text-[var(--ph-text-secondary)]" />
+              <div className="space-y-3 rounded-xl border border-[var(--ph-border)] bg-[#FAF8FF] p-4">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ph-lavender-ink)]">
+                  <Paperclip className="h-3.5 w-3.5" />
                   Attachment Metadata ({attachmentNames.length})
                 </span>
 
                 {attachmentNames.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {attachmentNames.map((file, idx) => (
-                      <Badge key={`${file}-${idx}`} variant="neutral" className="gap-1.5 py-1">
+                      <Badge key={`${file}-${idx}`} variant="neutral" className="gap-1.5 bg-white py-1">
                         <span className="font-mono">{file}</span>
                         <button
                           type="button"
@@ -368,7 +382,7 @@ export const NotesPage: React.FC = () => {
                             setAttachmentNames((prev) => prev.filter((_, i) => i !== idx))
                           }
                           aria-label={`Remove ${file}`}
-                          className="text-[var(--ph-text-muted)] hover:text-[var(--ph-error)] cursor-pointer"
+                          className="text-[var(--ph-text-muted)] hover:text-[#B53D3D] cursor-pointer"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -388,9 +402,15 @@ export const NotesPage: React.FC = () => {
                         handleAddAttachment();
                       }
                     }}
-                    className="h-8 text-xs"
+                    className="h-8 bg-white text-xs"
                   />
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddAttachment}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddAttachment}
+                    className="bg-white"
+                  >
                     Attach ref
                   </Button>
                 </div>
@@ -403,7 +423,7 @@ export const NotesPage: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     onClick={handleDelete}
-                    className="text-[var(--ph-error)]"
+                    className="text-[#B53D3D]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete note
@@ -412,7 +432,7 @@ export const NotesPage: React.FC = () => {
                   <span />
                 )}
 
-                <Button type="submit" size="sm">
+                <Button type="submit" size="md">
                   {activeNote ? 'Save note' : 'Create note'}
                 </Button>
               </div>

@@ -1,67 +1,46 @@
-/* ProjectHub Design Tokens — Soft Lavender (Light & Dark Modes) */
+/* ProjectHub Design Tokens — Fresh Lavender (Light Only) */
 
 :root {
-  --ph-bg-primary: #F8F7FC;
-  --ph-bg-secondary: #F2EFF8;
+  --ph-bg-primary: #F7F5FF;
+  --ph-bg-secondary: #F1EDFC;
   --ph-bg-card: #FFFFFF;
-  --ph-bg-hover: #F5F2FA;
+  --ph-bg-hover: #F5F2FF;
 
-  --ph-accent: #A78BFA;
-  --ph-accent-hover: #8B72D9;
+  --ph-accent: #9272E8;
+  --ph-accent-hover: #7958D0;
   --ph-accent-foreground: #FFFFFF;
-  --ph-accent-soft: #F0EBFF;
-  --ph-accent-text: #6D4FD1;
+  --ph-accent-soft: #EEE8FF;
+  --ph-accent-text: #6545C4;
 
-  --ph-text-primary: #272238;
-  --ph-text-secondary: #777184;
-  --ph-text-muted: #9892A6;
+  /* Supporting Pastel Palette */
+  --ph-lavender-soft: #EEE8FF;
+  --ph-lavender-ink: #6545C4;
+  --ph-peach-soft: #FFE8DC;
+  --ph-peach-ink: #B35A30;
+  --ph-mint-soft: #DDF5E9;
+  --ph-mint-ink: #277554;
+  --ph-sky-soft: #E2F0FF;
+  --ph-sky-ink: #2A67A8;
 
-  --ph-border: #E9E4F5;
-  --ph-border-hover: #D5CCE9;
+  /* Typography & Borders */
+  --ph-text-primary: #29243A;
+  --ph-text-secondary: #77738A;
+  --ph-text-muted: #9A95AC;
 
-  /* Muted Semantic Colors */
-  --ph-success: #2F855A;
-  --ph-success-soft: #EEF7F2;
-  --ph-warning: #B7791F;
-  --ph-warning-soft: #FDF6E9;
-  --ph-error: #C53030;
-  --ph-error-soft: #FDF0F0;
-  --ph-info: #2B6CB0;
-  --ph-info-soft: #EFF6FC;
+  --ph-border: #EBE6F4;
+  --ph-border-hover: #D6CEEC;
 
-  --ph-shadow-sm: 0 1px 2px rgba(39, 34, 56, 0.04);
-  --ph-shadow-md: 0 4px 14px rgba(39, 34, 56, 0.07);
-}
+  /* Semantic Colors */
+  --ph-success: #46A77C;
+  --ph-success-soft: #DDF5E9;
+  --ph-warning: #E5A34D;
+  --ph-warning-soft: #FFF1DB;
+  --ph-error: #E47777;
+  --ph-error-soft: #FDEAEA;
+  --ph-info: #4D8CE8;
+  --ph-info-soft: #E2F0FF;
 
-.dark {
-  --ph-bg-primary: #15131C;
-  --ph-bg-secondary: #1B1823;
-  --ph-bg-card: #201D2A;
-  --ph-bg-hover: #272334;
-
-  --ph-accent: #B69AFF;
-  --ph-accent-hover: #9A7DE6;
-  --ph-accent-foreground: #15131C;
-  --ph-accent-soft: #30273F;
-  --ph-accent-text: #C7B2FF;
-
-  --ph-text-primary: #F1EDF8;
-  --ph-text-secondary: #AAA3B8;
-  --ph-text-muted: #7C758C;
-
-  --ph-border: #373142;
-  --ph-border-hover: #4B435A;
-
-  /* Muted Semantic Colors (Dark) */
-  --ph-success: #68D391;
-  --ph-success-soft: rgba(104, 211, 145, 0.12);
-  --ph-warning: #F6AD55;
-  --ph-warning-soft: rgba(246, 173, 85, 0.12);
-  --ph-error: #FC8181;
-  --ph-error-soft: rgba(252, 129, 129, 0.12);
-  --ph-info: #63B3ED;
-  --ph-info-soft: rgba(99, 179, 237, 0.12);
-
-  --ph-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --ph-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* Light Elevation Shadows */
+  --ph-shadow-sm: 0 1px 2px rgba(41, 36, 58, 0.04), 0 1px 3px rgba(146, 114, 232, 0.04);
+  --ph-shadow-md: 0 8px 24px rgba(41, 36, 58, 0.06), 0 2px 8px rgba(146, 114, 232, 0.06);
 }

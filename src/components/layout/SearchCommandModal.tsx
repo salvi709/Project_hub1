@@ -123,7 +123,7 @@ export const SearchCommandModal: React.FC<SearchCommandModalProps> = ({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#15131C]/50 backdrop-blur-[2px]" />
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#29243A]/25 backdrop-blur-[3px]" />
         <DialogPrimitive.Content
           onKeyDown={handleKeyDown}
           aria-label="Global workspace search"
