@@ -12,18 +12,18 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const THEME_STORAGE_KEY = 'projecthub-theme';
 
 function getSystemTheme(): 'dark' | 'light' {
-  if (typeof window === 'undefined') return 'dark';
+  if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemePreference>(() => {
-    if (typeof window === 'undefined') return 'dark';
+    if (typeof window === 'undefined') return 'light';
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'dark' || stored === 'light' || stored === 'system') {
       return stored;
     }
-    return 'dark';
+    return 'light';
   });
 
   const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>(getSystemTheme);
@@ -41,12 +41,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = document.documentElement;
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');
+      root.style.backgroundColor = '#15131C';
     } else {
       root.classList.remove('dark');
+      root.style.backgroundColor = '#F8F7FC';
     }
     const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      metaTheme.setAttribute('content', resolvedTheme === 'dark' ? '#050505' : '#fafafa');
+      metaTheme.setAttribute('content', resolvedTheme === 'dark' ? '#15131C' : '#F8F7FC');
     }
   }, [resolvedTheme]);
 

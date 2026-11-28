@@ -80,7 +80,7 @@ export const AuthForm: React.FC = () => {
   return (
     <Card className="w-full max-w-md p-6 sm:p-7">
       <div className="mb-5">
-        <h2 className="font-display text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
+        <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
           {mode === 'signin' ? 'Sign in to ProjectHub' : 'Create your workspace'}
         </h2>
         <p className="mt-1 text-xs text-[var(--ph-text-secondary)]">
@@ -88,24 +88,23 @@ export const AuthForm: React.FC = () => {
         </p>
       </div>
 
-      {/* Honest Supabase Readiness Banner */}
       {!isSupabaseConfigured ? (
-        <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-[var(--ph-text-secondary)]">
+        <div className="mb-5 rounded-md border border-[var(--ph-border)] bg-[var(--ph-warning-soft)] p-3.5 text-xs text-[var(--ph-text-secondary)]">
           <div className="flex items-start gap-2.5">
-            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ph-warning)]" />
             <div className="space-y-1">
-              <p className="font-medium text-amber-700 dark:text-amber-300">
+              <p className="font-semibold text-[var(--ph-warning)]">
                 Supabase credentials not configured
               </p>
               <p className="leading-relaxed">
                 Authentication is prepared in code, but {env.validationIssues.join(' ')} Supply valid
-                credentials in <code className="font-mono text-[11px]">.env</code> to test live sign-in.
+                credentials in <code className="font-mono text-[11px]">.env</code> to enable live sign-in.
               </p>
             </div>
           </div>
         </div>
       ) : (
-        <div className="mb-5 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400">
+        <div className="mb-5 flex items-center gap-2 rounded-md border border-[var(--ph-border)] bg-[var(--ph-success-soft)] px-3 py-2 text-xs text-[var(--ph-success)]">
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>Supabase client configured · Ready for session verification</span>
         </div>
@@ -121,7 +120,7 @@ export const AuthForm: React.FC = () => {
       {errorMessage && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs text-red-700 dark:text-red-300"
+          className="mb-4 flex items-start gap-2 rounded-md border border-[var(--ph-border)] bg-[var(--ph-error-soft)] px-3 py-2.5 text-xs text-[var(--ph-error)]"
         >
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{errorMessage}</span>
@@ -131,7 +130,7 @@ export const AuthForm: React.FC = () => {
       {infoMessage && (
         <div
           role="status"
-          className="mb-4 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-700 dark:text-emerald-300"
+          className="mb-4 flex items-start gap-2 rounded-md border border-[var(--ph-border)] bg-[var(--ph-success-soft)] px-3 py-2.5 text-xs text-[var(--ph-success)]"
         >
           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{infoMessage}</span>
@@ -213,11 +212,11 @@ export const AuthForm: React.FC = () => {
         <div className="mt-5 border-t border-[var(--ph-border)] pt-4">
           <Button
             type="button"
-            variant="ghost"
-            className="w-full text-xs text-[var(--ph-accent)] hover:text-emerald-300"
+            variant="subtle"
+            className="w-full text-xs"
             onClick={handleEnterPreview}
           >
-            Continue to UI Preview Workspace
+            Continue to Local UI Preview Workspace
           </Button>
         </div>
       )}

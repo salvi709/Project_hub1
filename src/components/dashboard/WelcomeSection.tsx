@@ -1,41 +1,53 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowUpRight, Info } from 'lucide-react';
+import { FolderPlus, Plus } from 'lucide-react';
+import { formatTodayBanner, getGreeting } from '../../lib/date';
 import { useAuth } from '../../features/auth/AuthContext';
-import { formatFullDate } from '../../utils/formatters';
 import { Button } from '../ui/Button';
 
-export const WelcomeSection: React.FC = () => {
-  const { displayName, isSupabaseConfigured } = useAuth();
-  const todayLabel = formatFullDate(new Date());
+interface WelcomeSectionProps {
+  activeProjectCount: number;
+  dueTodayCount: number;
+  onNewProject: () => void;
+  onNewTask: () => void;
+}
+
+export const WelcomeSection: React.FC<WelcomeSectionProps> = ({
+  activeProjectCount,
+  dueTodayCount,
+  onNewProject,
+  onNewTask,
+}) => {
+  const { displayName, isPreviewMode } = useAuth();
+  const firstName =
+    displayName === 'Workspace Preview'
+      ? 'there'
+      : displayName.split(' ')[0] || 'there';
 
   return (
     <section className="flex flex-col gap-4 border-b border-[var(--ph-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="space-y-1.5">
-        <p className="font-mono text-xs text-[var(--ph-text-muted)]">{todayLabel}</p>
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-[var(--ph-text-primary)] sm:text-[28px]">
-          Welcome back, {displayName}
+      <div>
+        <p className="text-xs font-medium text-[var(--ph-text-secondary)]">
+          {formatTodayBanner()}
+          {isPreviewMode && ' · Local Preview Workspace'}
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--ph-text-primary)] sm:text-[26px]">
+          {getGreeting()}, {firstName}
         </h2>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--ph-text-secondary)]">
-          <Info className="h-3.5 w-3.5 shrink-0 text-[var(--ph-accent)]" />
-          <span>
-            Showing sample preview data for Phase 1 UI validation.
-            {!isSupabaseConfigured && ' Connect Supabase credentials in .env to persist real workspace records.'}
-          </span>
-        </div>
+        <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
+          {dueTodayCount > 0
+            ? `${dueTodayCount} task${dueTodayCount === 1 ? '' : 's'} due today across ${activeProjectCount} active project${activeProjectCount === 1 ? '' : 's'}.`
+            : `No tasks due today · ${activeProjectCount} active project${activeProjectCount === 1 ? '' : 's'} in motion.`}
+        </p>
       </div>
 
-      <div className="flex items-center gap-2.5 shrink-0">
-        <Button asChild variant="outline" size="sm">
-          <Link to="/projects">
-            <span>Browse Projects</span>
-          </Link>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onNewProject}>
+          <FolderPlus className="h-3.5 w-3.5" />
+          <span>New Project</span>
         </Button>
-        <Button asChild variant="primary" size="sm">
-          <Link to="/tasks">
-            <span>Open Task Queue</span>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
+        <Button variant="primary" size="sm" onClick={onNewTask}>
+          <Plus className="h-3.5 w-3.5" />
+          <span>Add Task</span>
         </Button>
       </div>
     </section>

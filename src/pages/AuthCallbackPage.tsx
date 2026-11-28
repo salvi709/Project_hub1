@@ -30,10 +30,10 @@ export const AuthCallbackPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--ph-bg-primary)] px-4">
-      <div className="max-w-sm text-center space-y-4">
+      <div className="max-w-sm space-y-4 text-center">
         {error ? (
           <>
-            <h1 className="font-display text-lg font-semibold text-red-400">
+            <h1 className="text-lg font-semibold text-[var(--ph-error)]">
               Authentication Callback Error
             </h1>
             <p className="text-xs text-[var(--ph-text-secondary)]">{error}</p>

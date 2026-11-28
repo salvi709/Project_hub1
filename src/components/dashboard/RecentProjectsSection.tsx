@@ -1,105 +1,113 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, GitBranch } from 'lucide-react';
-import type { SampleProject } from '../../types/domain';
-import { formatPercentage, formatShortDate } from '../../utils/formatters';
-import { ProjectPreviewDialog } from '../projects/ProjectPreviewDialog';
+import { ArrowRight, Calendar, FolderKanban, GitBranch } from 'lucide-react';
+import { formatShortDate } from '../../lib/date';
+import { PROJECT_STATUS_META } from '../../lib/statusMeta';
+import { useWorkspace } from '../../features/workspace/WorkspaceContext';
+import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 
 interface RecentProjectsSectionProps {
-  projects: SampleProject[];
+  onNewProject: () => void;
 }
 
-const STATUS_LABEL: Record<SampleProject['status'], { text: string; colorClass: string }> = {
-  active: { text: 'Active', colorClass: 'text-emerald-600 dark:text-emerald-400' },
-  planning: { text: 'Planning', colorClass: 'text-[var(--ph-text-secondary)]' },
-  on_hold: { text: 'On Hold', colorClass: 'text-amber-600 dark:text-amber-400' },
-  completed: { text: 'Completed', colorClass: 'text-emerald-700 dark:text-emerald-300' },
-  archived: { text: 'Archived', colorClass: 'text-[var(--ph-text-muted)]' },
-};
+export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
+  onNewProject,
+}) => {
+  const { projects, tasks, getProjectProgress } = useWorkspace();
 
-export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({ projects }) => {
-  const [selectedProject, setSelectedProject] = useState<SampleProject | null>(null);
+  const displayedProjects = [...projects]
+    .sort((a, b) => (a.status === 'active' && b.status !== 'active' ? -1 : 0))
+    .slice(0, 4);
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Recent Projects</CardTitle>
-            <CardDescription className="mt-0.5">
-              Sample initiatives · Click a project to inspect linked preview tasks
-            </CardDescription>
-          </div>
-          <Link
-            to="/projects"
-            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--ph-accent)] hover:underline whitespace-nowrap shrink-0"
-          >
-            <span>View all</span>
+    <Card>
+      <CardHeader className="border-b border-[var(--ph-border)] pb-4">
+        <div>
+          <CardTitle>Active Projects</CardTitle>
+          <CardDescription>Progress and target deadlines across your current work</CardDescription>
+        </div>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/projects">
+            View all
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </CardHeader>
+        </Button>
+      </CardHeader>
 
-        <CardContent className="divide-y divide-[var(--ph-border)]">
-          {projects.slice(0, 4).map((project) => {
-            const pct = formatPercentage(project.tasksCompleted, project.tasksTotal);
-            const status = STATUS_LABEL[project.status];
+      <CardContent className="pt-4">
+        {displayedProjects.length === 0 ? (
+          <EmptyState
+            icon={<FolderKanban className="h-5 w-5" />}
+            title="No projects yet"
+            description="Create a project to organize tasks, milestones, notes, and repository links."
+            action={
+              <Button size="sm" onClick={onNewProject}>
+                Create project
+              </Button>
+            }
+          />
+        ) : (
+          <div className="divide-y divide-[var(--ph-border)]">
+            {displayedProjects.map((project) => {
+              const progress = getProjectProgress(project.id);
+              const statusMeta = PROJECT_STATUS_META[project.status];
+              const projectTasks = tasks.filter((t) => t.projectId === project.id);
+              const doneTasks = projectTasks.filter((t) => t.status === 'completed').length;
 
-            return (
-              <div key={project.id} className="py-3.5 first:pt-1 last:pb-0">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProject(project)}
-                      className="font-display text-sm font-medium text-[var(--ph-text-primary)] hover:text-[var(--ph-accent)] transition-colors truncate text-left cursor-pointer"
-                    >
-                      {project.name}
-                    </button>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--ph-text-muted)]">
-                      <span>{project.category}</span>
-                      <span aria-hidden="true">·</span>
-                      <span className={status.colorClass}>{status.text}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>Due {formatShortDate(project.targetDate)}</span>
+              return (
+                <Link
+                  key={project.id}
+                  to={`/projects/${project.id}`}
+                  className="group flex flex-col gap-2.5 py-3.5 first:pt-0 last:pb-0 transition-colors sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-medium text-[var(--ph-text-primary)] group-hover:text-[var(--ph-accent-text)] transition-colors">
+                        {project.name}
+                      </span>
+                      <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                      <span className="text-[11px] text-[var(--ph-text-muted)]">
+                        {project.category}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--ph-text-secondary)]">
+                      <span className="inline-flex items-center gap-1">
+                        <Calendar className="h-3 w-3 text-[var(--ph-text-muted)]" />
+                        Due {formatShortDate(project.targetDate)}
+                      </span>
+                      <span>
+                        {doneTasks}/{projectTasks.length} tasks
+                      </span>
                       {project.githubRepo && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px]">
-                            <GitBranch className="h-3 w-3" />
-                            {project.githubRepo}
-                          </span>
-                        </>
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--ph-text-muted)]">
+                          <GitBranch className="h-3 w-3" />
+                          {project.githubRepo}
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className="font-mono text-xs font-medium text-[var(--ph-text-primary)] tabular-nums">
-                      {pct}%
-                    </span>
-                    <div className="mt-0.5 font-mono text-[11px] text-[var(--ph-text-muted)] tabular-nums">
-                      {project.tasksCompleted}/{project.tasksTotal} tasks
+                  <div className="flex items-center gap-3 sm:w-40 shrink-0">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--ph-accent)] transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
+                    <span className="w-9 text-right font-mono text-xs text-[var(--ph-text-secondary)] tabular-nums">
+                      {progress}%
+                    </span>
                   </div>
-                </div>
-
-                <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-[var(--ph-bg-elevated)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--ph-accent)] transition-[width] duration-300"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-
-      <ProjectPreviewDialog
-        project={selectedProject}
-        onOpenChange={(open) => !open && setSelectedProject(null)}
-      />
-    </>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };

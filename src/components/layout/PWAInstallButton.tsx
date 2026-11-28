@@ -18,12 +18,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ compact = fa
 
   if (isInstallable) {
     return (
-      <Button
-        variant="outline"
-        size={compact ? 'sm' : 'md'}
-        onClick={install}
-        className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
-      >
+      <Button variant="subtle" size={compact ? 'sm' : 'md'} onClick={install}>
         <Download className="h-3.5 w-3.5" />
         <span>Install App</span>
       </Button>
@@ -46,10 +41,10 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ compact = fa
           <DialogContent>
             <DialogTitle>Install ProjectHub on iPhone or iPad</DialogTitle>
             <DialogDescription>
-              Add ProjectHub to your Home Screen for standalone app launch and shell caching.
+              Add ProjectHub to your Home Screen for standalone app launch and offline shell access.
             </DialogDescription>
             <ol className="mt-4 space-y-2.5 text-sm text-[var(--ph-text-secondary)]">
-              <li>1. Tap the Share button in the Safari browser toolbar.</li>
+              <li>1. Tap the Share button in the Safari toolbar.</li>
               <li>2. Scroll down and select Add to Home Screen.</li>
               <li>3. Confirm the name ProjectHub and tap Add.</li>
             </ol>

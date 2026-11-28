@@ -1,164 +1,535 @@
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, Info } from 'lucide-react';
-import { SAMPLE_TASKS } from '../features/tasks/sampleTasks';
-import { cn } from '../lib/utils';
-import { formatShortDate } from '../utils/formatters';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  Plus,
+} from 'lucide-react';
+import { formatFullDate, formatShortDate, toISODate } from '../lib/date';
+import { PRIORITY_META, PROJECT_STATUS_META, TASK_STATUS_META } from '../lib/statusMeta';
+import { useWorkspace } from '../features/workspace/WorkspaceContext';
+import { TaskFormDialog } from '../components/tasks/TaskFormDialog';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-// November 2026 starts on Sunday (offset 6 in Mon-Sun grid, 30 days)
-const NOVEMBER_2026_LEADING_BLANKS = 6;
-const NOVEMBER_2026_DAYS = Array.from({ length: 30 }, (_, i) => i + 1);
+type CalendarMode = 'month' | 'week' | 'day';
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export const CalendarPage: React.FC = () => {
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const { projects, tasks, getProjectById } = useWorkspace();
 
-  const taskDates = new Map<number, typeof SAMPLE_TASKS>();
-  SAMPLE_TASKS.forEach((task) => {
-    const day = Number(task.dueDate.split('-')[2]);
-    if (!Number.isNaN(day)) {
-      const existing = taskDates.get(day) ?? [];
-      existing.push(task);
-      taskDates.set(day, existing);
+  const [mode, setMode] = useState<CalendarMode>('month');
+  const [cursorDate, setCursorDate] = useState<Date>(() => new Date());
+  const [selectedISO, setSelectedISO] = useState<string>(() => toISODate(new Date()));
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+
+  const todayISO = toISODate(new Date());
+
+  const eventsByDate = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        tasks: typeof tasks;
+        milestones: typeof projects;
+      }
+    > = {};
+
+    const ensure = (iso: string) => {
+      if (!map[iso]) map[iso] = { tasks: [], milestones: [] };
+      return map[iso];
+    };
+
+    tasks.forEach((t) => {
+      if (t.dueDate) ensure(t.dueDate).tasks.push(t);
+    });
+    projects.forEach((p) => {
+      if (p.targetDate) ensure(p.targetDate).milestones.push(p);
+    });
+
+    return map;
+  }, [tasks, projects]);
+
+  const monthCells = useMemo(() => {
+    const year = cursorDate.getFullYear();
+    const month = cursorDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startOffset = firstDay.getDay();
+    const gridStart = new Date(year, month, 1 - startOffset);
+
+    const cells: { date: Date; iso: string; inMonth: boolean }[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      cells.push({
+        date: d,
+        iso: toISODate(d),
+        inMonth: d.getMonth() === month,
+      });
     }
-  });
+    return cells;
+  }, [cursorDate]);
 
-  const visibleMilestones =
-    selectedDay !== null ? taskDates.get(selectedDay) ?? [] : SAMPLE_TASKS;
+  const weekDays = useMemo(() => {
+    const start = new Date(cursorDate);
+    start.setDate(cursorDate.getDate() - cursorDate.getDay());
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      return { date: d, iso: toISODate(d) };
+    });
+  }, [cursorDate]);
+
+  const navigatePeriod = (dir: -1 | 1) => {
+    const next = new Date(cursorDate);
+    if (mode === 'month') {
+      next.setMonth(cursorDate.getMonth() + dir);
+    } else if (mode === 'week') {
+      next.setDate(cursorDate.getDate() + dir * 7);
+    } else {
+      next.setDate(cursorDate.getDate() + dir);
+      setSelectedISO(toISODate(next));
+    }
+    setCursorDate(next);
+  };
+
+  const jumpToday = () => {
+    const now = new Date();
+    setCursorDate(now);
+    setSelectedISO(toISODate(now));
+  };
+
+  const periodLabel = useMemo(() => {
+    if (mode === 'month') {
+      return cursorDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    if (mode === 'week') {
+      const first = weekDays[0].date;
+      const last = weekDays[6].date;
+      return `${first.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${last.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return formatFullDate(selectedISO);
+  }, [mode, cursorDate, weekDays, selectedISO]);
+
+  const selectedDayEvents = eventsByDate[selectedISO] ?? { tasks: [], milestones: [] };
+
+  const upcomingEvents = useMemo(() => {
+    const combined: {
+      id: string;
+      type: 'task' | 'milestone';
+      title: string;
+      date: string;
+      meta: string;
+      projectId?: string | null;
+    }[] = [];
+
+    tasks
+      .filter((t) => t.status !== 'completed' && t.dueDate >= todayISO)
+      .forEach((t) => {
+        combined.push({
+          id: `t-${t.id}`,
+          type: 'task',
+          title: t.title,
+          date: t.dueDate,
+          meta: getProjectById(t.projectId)?.name ?? 'Personal',
+          projectId: t.projectId,
+        });
+      });
+
+    projects
+      .filter((p) => p.status !== 'completed' && p.targetDate >= todayISO)
+      .forEach((p) => {
+        combined.push({
+          id: `p-${p.id}`,
+          type: 'milestone',
+          title: `${p.name} target deadline`,
+          date: p.targetDate,
+          meta: p.category,
+          projectId: p.id,
+        });
+      });
+
+    return combined.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 7);
+  }, [tasks, projects, todayISO, getProjectById]);
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-[var(--ph-border)] pb-5">
-        <h2 className="font-display text-xl font-semibold text-[var(--ph-text-primary)]">
-          Schedule &amp; Deadlines
-        </h2>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ph-text-secondary)]">
-          <Info className="h-3.5 w-3.5 text-[var(--ph-accent)] shrink-0" />
-          <span>
-            Phase 1 calendar layout preview · Select any day to inspect scheduled sample milestones
-          </span>
-        </p>
+      {/* Header & Controls */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
+            Calendar
+          </h2>
+          <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
+            Task deadlines and project target milestones across monthly, weekly, and daily views.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
+            {(['month', 'week', 'day'] as CalendarMode[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                className={`rounded-sm px-2.5 py-1 text-xs font-medium capitalize transition-colors cursor-pointer ${
+                  mode === m
+                    ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                    : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-card)] p-0.5">
+            <button
+              type="button"
+              onClick={() => navigatePeriod(-1)}
+              aria-label="Previous period"
+              className="rounded-sm p-1.5 text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={jumpToday}
+              className="rounded-sm px-2.5 py-1 text-xs font-medium text-[var(--ph-text-primary)] hover:bg-[var(--ph-bg-hover)] cursor-pointer"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => navigatePeriod(1)}
+              aria-label="Next period"
+              className="rounded-sm p-1.5 text-[var(--ph-text-secondary)] hover:bg-[var(--ph-bg-hover)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          <Button size="sm" onClick={() => setTaskDialogOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        <Card className="xl:col-span-8">
-          <CardHeader>
-            <div>
-              <CardTitle>November 2026</CardTitle>
-              <CardDescription className="mt-0.5">Monthly deadline overview</CardDescription>
+        {/* Calendar Surface */}
+        <Card className="overflow-hidden xl:col-span-8">
+          <div className="flex items-center justify-between border-b border-[var(--ph-border)] px-5 py-3.5">
+            <h3 className="text-sm font-semibold text-[var(--ph-text-primary)]">
+              {periodLabel}
+            </h3>
+            <div className="flex items-center gap-3 text-[11px] text-[var(--ph-text-secondary)]">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[var(--ph-accent)]" />
+                Task
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[var(--ph-success)]" />
+                Milestone
+              </span>
             </div>
-            <CalendarIcon className="h-4 w-4 text-[var(--ph-text-muted)]" />
-          </CardHeader>
+          </div>
 
-          <CardContent>
-            <div className="grid grid-cols-7 gap-px rounded-lg border border-[var(--ph-border)] bg-[var(--ph-border)] overflow-hidden">
-              {WEEKDAYS.map((day) => (
-                <div
-                  key={day}
-                  className="bg-[var(--ph-bg-elevated)] px-2 py-2 text-center text-xs font-medium text-[var(--ph-text-secondary)]"
-                >
-                  {day}
-                </div>
-              ))}
+          {mode === 'month' && (
+            <div>
+              <div className="grid grid-cols-7 border-b border-[var(--ph-border)] bg-[var(--ph-bg-secondary)]">
+                {WEEKDAYS.map((day) => (
+                  <div
+                    key={day}
+                    className="py-2 text-center text-[11px] font-medium text-[var(--ph-text-secondary)]"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 divide-x divide-y divide-[var(--ph-border)]">
+                {monthCells.map((cell) => {
+                  const dayEvents = eventsByDate[cell.iso];
+                  const isToday = cell.iso === todayISO;
+                  const isSelected = cell.iso === selectedISO;
 
-              {Array.from({ length: NOVEMBER_2026_LEADING_BLANKS }).map((_, idx) => (
-                <div key={`blank-${idx}`} className="min-h-[78px] bg-[var(--ph-bg-primary)]/60 p-2" />
-              ))}
+                  return (
+                    <button
+                      key={cell.iso}
+                      type="button"
+                      onClick={() => setSelectedISO(cell.iso)}
+                      className={`min-h-[88px] p-2 text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[var(--ph-accent-soft)]/55'
+                          : 'hover:bg-[var(--ph-bg-hover)]'
+                      } ${!cell.inMonth && 'opacity-45'}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-medium tabular-nums ${
+                            isToday
+                              ? 'bg-[var(--ph-accent)] text-[var(--ph-accent-foreground)]'
+                              : isSelected
+                              ? 'text-[var(--ph-accent-text)] font-semibold'
+                              : 'text-[var(--ph-text-primary)]'
+                          }`}
+                        >
+                          {cell.date.getDate()}
+                        </span>
+                      </div>
 
-              {NOVEMBER_2026_DAYS.map((day) => {
-                const dayTasks = taskDates.get(day) ?? [];
-                const isToday = day === 20;
-                const isSelected = selectedDay === day;
+                      {dayEvents && (
+                        <div className="mt-1.5 space-y-1">
+                          {dayEvents.milestones.slice(0, 1).map((proj) => (
+                            <div
+                              key={proj.id}
+                              className="truncate rounded bg-[var(--ph-success-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ph-success)]"
+                            >
+                              {proj.name}
+                            </div>
+                          ))}
+                          {dayEvents.tasks.slice(0, 2).map((task) => (
+                            <div
+                              key={task.id}
+                              className="truncate rounded bg-[var(--ph-accent-soft)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ph-accent-text)]"
+                            >
+                              {task.title}
+                            </div>
+                          ))}
+                          {dayEvents.tasks.length + dayEvents.milestones.length > 3 && (
+                            <div className="text-[10px] text-[var(--ph-text-muted)]">
+                              +{dayEvents.tasks.length + dayEvents.milestones.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {mode === 'week' && (
+            <div className="grid grid-cols-1 divide-y divide-[var(--ph-border)] sm:grid-cols-7 sm:divide-x sm:divide-y-0">
+              {weekDays.map((day) => {
+                const dayEvents = eventsByDate[day.iso];
+                const isToday = day.iso === todayISO;
+                const isSelected = day.iso === selectedISO;
 
                 return (
-                  <button
-                    key={day}
-                    type="button"
-                    onClick={() => setSelectedDay((prev) => (prev === day ? null : day))}
-                    className={cn(
-                      'min-h-[78px] bg-[var(--ph-bg-surface)] p-2 flex flex-col justify-between text-left transition-colors hover:bg-[var(--ph-bg-elevated)]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ph-accent)] cursor-pointer',
-                      isToday && 'bg-[var(--ph-accent-soft)]',
-                      isSelected && 'ring-1 ring-inset ring-[var(--ph-accent)] bg-[var(--ph-accent-soft)]'
-                    )}
+                  <div
+                    key={day.iso}
+                    onClick={() => setSelectedISO(day.iso)}
+                    className={`min-h-[260px] p-3 transition-colors cursor-pointer ${
+                      isSelected ? 'bg-[var(--ph-accent-soft)]/45' : 'hover:bg-[var(--ph-bg-hover)]'
+                    }`}
                   >
-                    <span
-                      className={cn(
-                        'font-mono text-xs tabular-nums',
-                        isToday || isSelected
-                          ? 'font-semibold text-[var(--ph-accent)]'
-                          : 'text-[var(--ph-text-secondary)]'
-                      )}
-                    >
-                      {day}
-                    </span>
-                    <div className="mt-1 space-y-1 w-full">
-                      {dayTasks.map((t) => (
+                    <div className="flex items-center justify-between border-b border-[var(--ph-border)] pb-2">
+                      <span className="text-[11px] font-medium text-[var(--ph-text-secondary)]">
+                        {day.date.toLocaleDateString('en-US', { weekday: 'short' })}
+                      </span>
+                      <span
+                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold ${
+                          isToday
+                            ? 'bg-[var(--ph-accent)] text-[var(--ph-accent-foreground)]'
+                            : 'text-[var(--ph-text-primary)]'
+                        }`}
+                      >
+                        {day.date.getDate()}
+                      </span>
+                    </div>
+                    <div className="mt-2.5 space-y-1.5">
+                      {dayEvents?.milestones.map((p) => (
+                        <div
+                          key={p.id}
+                          className="rounded-md bg-[var(--ph-success-soft)] px-2 py-1 text-[11px] font-medium text-[var(--ph-success)]"
+                        >
+                          {p.name}
+                        </div>
+                      ))}
+                      {dayEvents?.tasks.map((t) => (
                         <div
                           key={t.id}
-                          title={t.title}
-                          className="truncate rounded bg-[var(--ph-bg-elevated)] px-1.5 py-0.5 text-[10px] text-[var(--ph-text-primary)] border border-[var(--ph-border)]"
+                          className="rounded-md bg-[var(--ph-accent-soft)] px-2 py-1 text-[11px] font-medium text-[var(--ph-accent-text)]"
                         >
                           {t.title}
                         </div>
                       ))}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
-          </CardContent>
+          )}
+
+          {mode === 'day' && (
+            <div className="p-5 space-y-4">
+              {selectedDayEvents.milestones.length === 0 &&
+              selectedDayEvents.tasks.length === 0 ? (
+                <div className="py-12 text-center text-xs text-[var(--ph-text-muted)]">
+                  No tasks or milestones scheduled for {formatFullDate(selectedISO)}.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDayEvents.milestones.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/projects/${p.id}`}
+                      className="flex items-center justify-between rounded-md border border-[var(--ph-border)] p-3 hover:border-[var(--ph-border-hover)]"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <FolderKanban className="h-4 w-4 text-[var(--ph-success)]" />
+                        <div>
+                          <p className="text-sm font-medium text-[var(--ph-text-primary)]">
+                            {p.name}
+                          </p>
+                          <p className="text-xs text-[var(--ph-text-secondary)]">
+                            Project target deadline
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={PROJECT_STATUS_META[p.status].variant}>
+                        {PROJECT_STATUS_META[p.status].label}
+                      </Badge>
+                    </Link>
+                  ))}
+
+                  {selectedDayEvents.tasks.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between rounded-md border border-[var(--ph-border)] p-3"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-[var(--ph-text-primary)]">
+                          {t.title}
+                        </p>
+                        <p className="text-xs text-[var(--ph-text-secondary)]">
+                          {getProjectById(t.projectId)?.name ?? 'Personal'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={PRIORITY_META[t.priority].variant}>
+                          {PRIORITY_META[t.priority].label}
+                        </Badge>
+                        <Badge variant={TASK_STATUS_META[t.status].variant}>
+                          {TASK_STATUS_META[t.status].label}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </Card>
 
-        <Card className="xl:col-span-4">
-          <CardHeader>
-            <div>
-              <CardTitle>
-                {selectedDay !== null ? `Nov ${selectedDay}, 2026` : 'Upcoming Milestones'}
-              </CardTitle>
-              <CardDescription className="mt-0.5">
-                {selectedDay !== null
-                  ? 'Scheduled sample items for selected date'
-                  : 'Sample scheduled due dates'}
-              </CardDescription>
-            </div>
-            {selectedDay !== null && (
-              <button
-                type="button"
-                onClick={() => setSelectedDay(null)}
-                className="text-xs font-medium text-[var(--ph-accent)] hover:underline cursor-pointer shrink-0"
-              >
-                Show all
-              </button>
-            )}
-          </CardHeader>
-          <CardContent className="divide-y divide-[var(--ph-border)]">
-            {visibleMilestones.length === 0 ? (
-              <p className="py-6 text-xs text-[var(--ph-text-muted)]">
-                No sample milestones scheduled for Nov {selectedDay}.
-              </p>
-            ) : (
-              visibleMilestones.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex items-start justify-between gap-3 py-3 first:pt-1 last:pb-0"
-                >
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium text-[var(--ph-text-primary)] truncate">
-                      {task.title}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
-                      {task.projectName}
-                    </p>
-                  </div>
-                  <span className="font-mono text-xs text-[var(--ph-accent)] shrink-0 tabular-nums">
-                    {formatShortDate(task.dueDate)}
-                  </span>
+        {/* Right Sidebar: Selected Date + Upcoming */}
+        <div className="space-y-6 xl:col-span-4">
+          <Card>
+            <CardHeader className="border-b border-[var(--ph-border)] pb-3">
+              <div>
+                <CardTitle>{formatFullDate(selectedISO)}</CardTitle>
+                <CardDescription>
+                  {selectedDayEvents.tasks.length + selectedDayEvents.milestones.length} scheduled
+                  item(s)
+                </CardDescription>
+              </div>
+              <Button variant="subtle" size="sm" onClick={() => setTaskDialogOpen(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                Add
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {selectedDayEvents.tasks.length === 0 &&
+              selectedDayEvents.milestones.length === 0 ? (
+                <p className="py-4 text-center text-xs text-[var(--ph-text-muted)]">
+                  Nothing scheduled on this date.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {selectedDayEvents.milestones.map((p) => (
+                    <Link
+                      key={p.id}
+                      to={`/projects/${p.id}`}
+                      className="block rounded-md border border-[var(--ph-border)] bg-[var(--ph-success-soft)]/50 p-2.5 text-xs hover:border-[var(--ph-border-hover)]"
+                    >
+                      <span className="font-semibold text-[var(--ph-success)]">Milestone · </span>
+                      <span className="font-medium text-[var(--ph-text-primary)]">{p.name}</span>
+                    </Link>
+                  ))}
+                  {selectedDayEvents.tasks.map((t) => (
+                    <div
+                      key={t.id}
+                      className="rounded-md border border-[var(--ph-border)] p-2.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-[var(--ph-text-primary)]">
+                          {t.title}
+                        </span>
+                        <Badge variant={PRIORITY_META[t.priority].variant}>
+                          {PRIORITY_META[t.priority].label}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-[11px] text-[var(--ph-text-muted)]">
+                        {getProjectById(t.projectId)?.name ?? 'Personal'} ·{' '}
+                        {TASK_STATUS_META[t.status].label}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="border-b border-[var(--ph-border)] pb-3">
+              <div>
+                <CardTitle>Upcoming Events</CardTitle>
+                <CardDescription>Next deadlines across tasks and projects</CardDescription>
+              </div>
+              <CalendarIcon className="h-4 w-4 text-[var(--ph-text-muted)]" />
+            </CardHeader>
+            <CardContent className="pt-3">
+              {upcomingEvents.length === 0 ? (
+                <p className="py-4 text-center text-xs text-[var(--ph-text-muted)]">
+                  No upcoming events.
+                </p>
+              ) : (
+                <div className="divide-y divide-[var(--ph-border)]">
+                  {upcomingEvents.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-[var(--ph-text-primary)]">
+                          {item.title}
+                        </p>
+                        <p className="truncate text-[11px] text-[var(--ph-text-muted)]">
+                          {item.meta}
+                        </p>
+                      </div>
+                      <span className="shrink-0 font-mono text-[11px] text-[var(--ph-text-secondary)]">
+                        {formatShortDate(item.date)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      <TaskFormDialog
+        open={taskDialogOpen}
+        onOpenChange={setTaskDialogOpen}
+        defaultDueDate={selectedISO}
+      />
     </div>
   );
 };

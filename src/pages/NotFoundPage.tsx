@@ -5,13 +5,13 @@ import { Button } from '../components/ui/Button';
 
 export const NotFoundPage: React.FC = () => {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-4">
-      <p className="font-mono text-xs text-[var(--ph-accent)]">404</p>
-      <h2 className="mt-2 font-display text-2xl font-semibold text-[var(--ph-text-primary)]">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
+      <p className="font-mono text-xs text-[var(--ph-accent-text)]">404</p>
+      <h2 className="mt-2 text-2xl font-semibold text-[var(--ph-text-primary)]">
         Page not found
       </h2>
       <p className="mt-2 max-w-md text-sm text-[var(--ph-text-secondary)]">
-        The requested workspace route does not exist in ProjectHub Phase 1.
+        The requested workspace route does not exist in ProjectHub.
       </p>
       <Button asChild variant="outline" size="sm" className="mt-6">
         <Link to="/">

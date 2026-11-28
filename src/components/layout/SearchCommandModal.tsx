@@ -1,11 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckSquare, CornerDownLeft, FileText, FolderKanban, Search } from 'lucide-react';
+import { ArrowRight, CheckSquare, FileText, FolderKanban, Search } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { NAVIGATION_ITEMS } from '../../types/navigation';
-import { SAMPLE_PROJECTS } from '../../features/projects/sampleProjects';
-import { SAMPLE_NOTES, SAMPLE_TASKS } from '../../features/tasks/sampleTasks';
-import { cn } from '../../lib/utils';
-import { Dialog, DialogContent, DialogTitle } from '../ui/Dialog';
+import { useWorkspace } from '../../features/workspace/WorkspaceContext';
 import { NavIcon } from './NavIcon';
 
 interface SearchCommandModalProps {
@@ -13,24 +11,28 @@ interface SearchCommandModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-interface CommandItem {
-  key: string;
-  group: 'Navigation' | 'Projects · Sample Preview' | 'Tasks · Sample Preview' | 'Notes · Sample Preview';
+interface SearchResultItem {
+  id: string;
   label: string;
-  meta?: string;
+  subtitle: string;
   path: string;
-  icon: React.ReactNode;
+  group: 'Navigation' | 'Projects' | 'Tasks' | 'Notes';
+  icon?: React.ReactNode;
 }
 
-export const SearchCommandModal: React.FC<SearchCommandModalProps> = ({ open, onOpenChange }) => {
+export const SearchCommandModal: React.FC<SearchCommandModalProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const [query, setQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
+  const { projects, tasks, notes, getProjectById } = useWorkspace();
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
         onOpenChange(!open);
       }
     };
@@ -41,201 +43,168 @@ export const SearchCommandModal: React.FC<SearchCommandModalProps> = ({ open, on
   useEffect(() => {
     if (!open) {
       setQuery('');
-      setActiveIndex(0);
+      setSelectedIndex(0);
     }
   }, [open]);
 
-  const normalized = query.trim().toLowerCase();
+  const results = useMemo<SearchResultItem[]>(() => {
+    const q = query.trim().toLowerCase();
 
-  const items = useMemo<CommandItem[]>(() => {
-    const navItems: CommandItem[] = NAVIGATION_ITEMS.filter(
-      (item) =>
-        !normalized ||
-        item.label.toLowerCase().includes(normalized) ||
-        item.description.toLowerCase().includes(normalized)
-    ).map((item) => ({
-      key: `nav-${item.id}`,
-      group: 'Navigation',
+    const navItems: SearchResultItem[] = NAVIGATION_ITEMS.map((item) => ({
+      id: `nav-${item.id}`,
       label: item.label,
+      subtitle: item.description,
       path: item.path,
-      icon: <NavIcon name={item.iconName} className="h-4 w-4 text-[var(--ph-accent)]" />,
+      group: 'Navigation',
+      icon: <NavIcon name={item.iconName} className="h-4 w-4" />,
     }));
 
-    const projectItems: CommandItem[] = SAMPLE_PROJECTS.filter(
-      (project) =>
-        !normalized ||
-        project.name.toLowerCase().includes(normalized) ||
-        project.category.toLowerCase().includes(normalized)
-    )
-      .slice(0, 3)
-      .map((project) => ({
-        key: `proj-${project.id}`,
-        group: 'Projects · Sample Preview',
-        label: project.name,
-        meta: project.category,
-        path: '/projects',
-        icon: <FolderKanban className="h-4 w-4 shrink-0 text-[var(--ph-text-secondary)]" />,
-      }));
+    const projectItems: SearchResultItem[] = projects.map((proj) => ({
+      id: `proj-${proj.id}`,
+      label: proj.name,
+      subtitle: `${proj.category} · ${proj.status.replace('_', ' ')}`,
+      path: `/projects/${proj.id}`,
+      group: 'Projects',
+      icon: <FolderKanban className="h-4 w-4" />,
+    }));
 
-    const taskItems: CommandItem[] = SAMPLE_TASKS.filter(
-      (task) =>
-        !normalized ||
-        task.title.toLowerCase().includes(normalized) ||
-        task.projectName.toLowerCase().includes(normalized)
-    )
-      .slice(0, 3)
-      .map((task) => ({
-        key: `task-${task.id}`,
-        group: 'Tasks · Sample Preview',
-        label: task.title,
-        meta: task.projectName,
-        path: '/tasks',
-        icon: <CheckSquare className="h-4 w-4 shrink-0 text-[var(--ph-text-secondary)]" />,
-      }));
+    const taskItems: SearchResultItem[] = tasks.map((task) => ({
+      id: `task-${task.id}`,
+      label: task.title,
+      subtitle: `${getProjectById(task.projectId)?.name ?? 'Personal'} · ${task.priority}`,
+      path: '/tasks',
+      group: 'Tasks',
+      icon: <CheckSquare className="h-4 w-4" />,
+    }));
 
-    const noteItems: CommandItem[] = SAMPLE_NOTES.filter(
-      (note) =>
-        !normalized ||
-        note.title.toLowerCase().includes(normalized) ||
-        note.projectContext.toLowerCase().includes(normalized)
-    )
-      .slice(0, 2)
-      .map((note) => ({
-        key: `note-${note.id}`,
-        group: 'Notes · Sample Preview',
-        label: note.title,
-        meta: note.projectContext,
-        path: '/notes',
-        icon: <FileText className="h-4 w-4 shrink-0 text-[var(--ph-text-secondary)]" />,
-      }));
+    const noteItems: SearchResultItem[] = notes.map((note) => ({
+      id: `note-${note.id}`,
+      label: note.title,
+      subtitle: getProjectById(note.projectId)?.name ?? 'General Notes',
+      path: '/notes',
+      group: 'Notes',
+      icon: <FileText className="h-4 w-4" />,
+    }));
 
-    return [...navItems, ...projectItems, ...taskItems, ...noteItems];
-  }, [normalized]);
+    const all = [...projectItems, ...taskItems, ...noteItems, ...navItems];
+    if (!q) return [...navItems.slice(0, 4), ...projectItems.slice(0, 4)];
+    return all
+      .filter(
+        (item) =>
+          item.label.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q)
+      )
+      .slice(0, 12);
+  }, [query, projects, tasks, notes, getProjectById]);
 
   useEffect(() => {
-    setActiveIndex(0);
-  }, [normalized]);
+    setSelectedIndex(0);
+  }, [results.length]);
 
-  const goTo = (path: string) => {
+  const handleSelect = (item: SearchResultItem) => {
     onOpenChange(false);
-    navigate(path);
+    navigate(item.path);
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (items.length === 0) return;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex((prev) => (prev + 1) % items.length);
+      setSelectedIndex((prev) => (results.length > 0 ? (prev + 1) % results.length : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIndex((prev) => (prev - 1 + items.length) % items.length);
-    } else if (e.key === 'Enter') {
+      setSelectedIndex((prev) =>
+        results.length > 0 ? (prev - 1 + results.length) % results.length : 0
+      );
+    } else if (e.key === 'Enter' && results[selectedIndex]) {
       e.preventDefault();
-      const selected = items[activeIndex];
-      if (selected) goTo(selected.path);
+      handleSelect(results[selectedIndex]);
     }
   };
 
-  const groups: CommandItem['group'][] = [
-    'Navigation',
-    'Projects · Sample Preview',
-    'Tasks · Sample Preview',
-    'Notes · Sample Preview',
-  ];
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden max-w-xl">
-        <DialogTitle className="sr-only">Search ProjectHub workspace</DialogTitle>
-        <div className="flex items-center gap-3 border-b border-[var(--ph-border)] px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-[var(--ph-text-muted)]" />
-          <input
-            autoFocus
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleInputKeyDown}
-            placeholder="Search pages, sample projects, tasks, or notes..."
-            className="w-full bg-transparent text-sm text-[var(--ph-text-primary)] placeholder:text-[var(--ph-text-muted)] focus:outline-none"
-          />
-          <kbd className="hidden sm:inline-block rounded border border-[var(--ph-border)] bg-[var(--ph-bg-elevated)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ph-text-muted)]">
-            ESC
-          </kbd>
-        </div>
-
-        <div className="max-h-[380px] overflow-y-auto p-2 space-y-4">
-          {items.length === 0 && (
-            <div className="py-10 text-center text-sm text-[var(--ph-text-secondary)]">
-              No workspace items matching &ldquo;{query}&rdquo;.
-            </div>
-          )}
-
-          {groups.map((groupName) => {
-            const groupItems = items.filter((item) => item.group === groupName);
-            if (groupItems.length === 0) return null;
-
-            return (
-              <div key={groupName}>
-                <div className="px-2.5 py-1 text-xs font-medium text-[var(--ph-text-muted)]">
-                  {groupName}
-                </div>
-                <div className="space-y-0.5">
-                  {groupItems.map((item) => {
-                    const globalIdx = items.findIndex((x) => x.key === item.key);
-                    const isSelected = globalIdx === activeIndex;
-
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onMouseEnter={() => setActiveIndex(globalIdx)}
-                        onClick={() => goTo(item.path)}
-                        className={cn(
-                          'flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-sm text-[var(--ph-text-primary)] transition-colors cursor-pointer',
-                          isSelected ? 'bg-[var(--ph-bg-elevated)]' : 'hover:bg-[var(--ph-bg-elevated)]'
-                        )}
-                      >
-                        <span className="flex items-center gap-2.5 min-w-0">
-                          {item.icon}
-                          <span className="truncate">{item.label}</span>
-                        </span>
-                        {item.meta ? (
-                          <span className="text-xs text-[var(--ph-text-muted)] shrink-0 ml-3">
-                            {item.meta}
-                          </span>
-                        ) : (
-                          <ArrowRight
-                            className={cn(
-                              'h-3.5 w-3.5 shrink-0 transition-colors',
-                              isSelected ? 'text-[var(--ph-accent)]' : 'text-[var(--ph-text-muted)]'
-                            )}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center justify-between border-t border-[var(--ph-border)] bg-[var(--ph-bg-primary)]/60 px-4 py-2 text-[11px] text-[var(--ph-text-muted)]">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1">
-              <kbd className="rounded border border-[var(--ph-border)] bg-[var(--ph-bg-elevated)] px-1 font-mono text-[10px]">
-                ↑↓
-              </kbd>
-              Navigate
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <CornerDownLeft className="h-3 w-3" />
-              Open
-            </span>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[#15131C]/50 backdrop-blur-[2px]" />
+        <DialogPrimitive.Content
+          onKeyDown={handleKeyDown}
+          aria-label="Global workspace search"
+          className="fixed left-1/2 top-[14%] z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-[var(--ph-border)] bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-md)] focus:outline-none"
+        >
+          <DialogPrimitive.Title className="sr-only">
+            Search ProjectHub workspace
+          </DialogPrimitive.Title>
+          <div className="flex items-center gap-3 border-b border-[var(--ph-border)] px-4 py-3">
+            <Search className="h-4 w-4 shrink-0 text-[var(--ph-text-muted)]" />
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search projects, tasks, notes, or jump to a view..."
+              className="w-full bg-transparent text-sm text-[var(--ph-text-primary)] placeholder:text-[var(--ph-text-muted)] focus:outline-none"
+            />
+            <kbd className="hidden sm:inline-block rounded border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--ph-text-muted)]">
+              ESC
+            </kbd>
           </div>
-          <span>ProjectHub Command Palette</span>
-        </div>
-      </DialogContent>
-    </Dialog>
+
+          <div className="max-h-80 overflow-y-auto p-2">
+            {results.length === 0 ? (
+              <div className="py-10 text-center text-xs text-[var(--ph-text-muted)]">
+                No matching pages, projects, tasks, or notes for &ldquo;{query}&rdquo;.
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {results.map((item, idx) => {
+                  const isSelected = idx === selectedIndex;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() => setSelectedIndex(idx)}
+                      className={`flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-[var(--ph-accent-soft)] text-[var(--ph-accent-text)]'
+                          : 'hover:bg-[var(--ph-bg-hover)]'
+                      }`}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span
+                          className={
+                            isSelected
+                              ? 'text-[var(--ph-accent-text)]'
+                              : 'text-[var(--ph-text-secondary)]'
+                          }
+                        >
+                          {item.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-[var(--ph-text-primary)]">
+                            {item.label}
+                          </div>
+                          <div className="truncate text-[11px] text-[var(--ph-text-secondary)]">
+                            {item.subtitle}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="rounded border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--ph-text-secondary)]">
+                          {item.group}
+                        </span>
+                        <ArrowRight className="h-3.5 w-3.5 text-[var(--ph-text-muted)]" />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] px-4 py-2 text-[11px] text-[var(--ph-text-muted)]">
+            <span>Use ↑ ↓ to navigate, Enter to open</span>
+            <span className="font-mono">⌘K / Ctrl+K</span>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 };

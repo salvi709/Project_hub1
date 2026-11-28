@@ -1,50 +1,61 @@
-import type { PriorityLevel, ProjectStatus, TaskStatus } from './database';
+import type { PriorityLevel, ProjectStatus } from './database';
 
-export interface SampleProject {
+export type WorkspaceTaskStatus = 'todo' | 'in_progress' | 'completed' | 'on_hold';
+
+export interface WorkspaceSubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+export interface WorkspaceProject {
   id: string;
   name: string;
-  summary: string;
+  description: string;
   category: string;
   status: ProjectStatus;
   priority: PriorityLevel;
   githubRepo?: string;
   targetDate: string;
-  tasksCompleted: number;
-  tasksTotal: number;
+  createdAt: string;
   updatedAt: string;
-  isSamplePreview: true;
+  isSample?: boolean;
 }
 
-export interface SampleTask {
+export interface WorkspaceTask {
   id: string;
   title: string;
-  projectId: string;
-  projectName: string;
-  status: TaskStatus;
+  description?: string;
+  projectId: string | null;
+  status: WorkspaceTaskStatus;
   priority: PriorityLevel;
   dueDate: string;
-  subtasksDone: number;
-  subtasksTotal: number;
-  isSamplePreview: true;
+  subtasks: WorkspaceSubtask[];
+  createdAt: string;
+  updatedAt: string;
+  isSample?: boolean;
 }
 
-export interface SampleActivityItem {
+export interface WorkspaceNote {
+  id: string;
+  title: string;
+  content: string;
+  projectId: string | null;
+  resourceLinks: { label: string; url: string }[];
+  attachmentNames: string[];
+  updatedAt: string;
+  isSample?: boolean;
+}
+
+export interface WorkspaceActivityItem {
   id: string;
   actor: string;
   action: string;
   target: string;
   context: string;
   timestamp: string;
-  category: 'project' | 'task' | 'milestone' | 'note';
-  isSamplePreview: true;
-}
-
-export interface SampleProductivityDay {
-  day: string;
-  dateLabel: string;
-  completed: number;
-  planned: number;
-  focusHours: number;
+  category: 'project' | 'task' | 'note';
+  isSample?: boolean;
 }
 
 export interface SampleNotification {
@@ -53,17 +64,6 @@ export interface SampleNotification {
   detail: string;
   timestamp: string;
   read: boolean;
-  isSamplePreview: true;
-}
-
-export interface SampleNote {
-  id: string;
-  title: string;
-  projectContext: string;
-  excerpt: string;
-  updatedAt: string;
-  wordCount: number;
-  isSamplePreview: true;
 }
 
 export interface SampleRepoPreview {
@@ -75,5 +75,5 @@ export interface SampleRepoPreview {
   openIssues: number;
   openPrs: number;
   lastPush: string;
-  isSamplePreview: true;
+  recentCommits: { sha: string; message: string; timestamp: string }[];
 }

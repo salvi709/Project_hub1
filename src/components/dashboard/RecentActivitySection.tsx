@@ -1,95 +1,83 @@
 import React, { useMemo, useState } from 'react';
-import { CheckSquare, FileText, FolderKanban, GitCommitHorizontal } from 'lucide-react';
-import type { SampleActivityItem } from '../../types/domain';
-import { cn } from '../../lib/utils';
+import { CheckSquare, FileText, FolderKanban, History } from 'lucide-react';
+import { useWorkspace } from '../../features/workspace/WorkspaceContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
+import { EmptyState } from '../ui/EmptyState';
 
-interface RecentActivitySectionProps {
-  items: SampleActivityItem[];
-}
+export const RecentActivitySection: React.FC = () => {
+  const { activity } = useWorkspace();
+  const [filter, setFilter] = useState<'all' | 'project' | 'task' | 'note'>('all');
 
-const CATEGORY_ICON = {
-  project: FolderKanban,
-  task: CheckSquare,
-  milestone: GitCommitHorizontal,
-  note: FileText,
-};
+  const items = useMemo(() => {
+    const base =
+      filter === 'all' ? activity : activity.filter((item) => item.category === filter);
+    return base.slice(0, 6);
+  }, [activity, filter]);
 
-type ActivityFilter = 'all' | SampleActivityItem['category'];
-
-const FILTERS: { value: ActivityFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'project', label: 'Projects' },
-  { value: 'task', label: 'Tasks' },
-  { value: 'note', label: 'Notes' },
-];
-
-export const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ items }) => {
-  const [filter, setFilter] = useState<ActivityFilter>('all');
-
-  const filtered = useMemo(
-    () => items.filter((item) => filter === 'all' || item.category === filter),
-    [items, filter]
-  );
+  const getIcon = (category: 'project' | 'task' | 'note') => {
+    switch (category) {
+      case 'project':
+        return <FolderKanban className="h-3.5 w-3.5" />;
+      case 'task':
+        return <CheckSquare className="h-3.5 w-3.5" />;
+      case 'note':
+        return <FileText className="h-3.5 w-3.5" />;
+    }
+  };
 
   return (
     <Card>
-      <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start">
+      <CardHeader className="flex-col gap-3 border-b border-[var(--ph-border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle>Recent Activity</CardTitle>
-          <CardDescription className="mt-0.5">
-            Sample workspace events across projects and notes
-          </CardDescription>
+          <CardDescription>Updates across your workspace items</CardDescription>
         </div>
 
-        <div className="inline-flex items-center gap-0.5 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-primary)] p-0.5 shrink-0">
-          {FILTERS.map((f) => (
+        <div className="inline-flex rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
+          {(['all', 'task', 'project', 'note'] as const).map((tab) => (
             <button
-              key={f.value}
+              key={tab}
               type="button"
-              onClick={() => setFilter(f.value)}
-              className={cn(
-                'rounded-md px-2 py-1 text-[11px] font-medium transition-colors cursor-pointer',
-                filter === f.value
-                  ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
+              onClick={() => setFilter(tab)}
+              className={`rounded-sm px-2 py-1 text-[11px] font-medium capitalize transition-colors cursor-pointer ${
+                filter === tab
+                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
                   : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
-              )}
+              }`}
             >
-              {f.label}
+              {tab}
             </button>
           ))}
         </div>
       </CardHeader>
 
-      <CardContent className="divide-y divide-[var(--ph-border)]">
-        {filtered.length === 0 ? (
-          <p className="py-6 text-center text-xs text-[var(--ph-text-muted)]">
-            No sample activity recorded in this category.
-          </p>
+      <CardContent className="pt-4">
+        {items.length === 0 ? (
+          <EmptyState
+            icon={<History className="h-5 w-5" />}
+            title="No activity recorded"
+            description="Creating or updating projects, tasks, and notes will appear here."
+          />
         ) : (
-          filtered.map((item) => {
-            const Icon = CATEGORY_ICON[item.category];
-            return (
-              <div key={item.id} className="flex items-start gap-3 py-3 first:pt-1 last:pb-0">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-elevated)] text-[var(--ph-text-secondary)]">
-                  <Icon className="h-3.5 w-3.5" />
+          <div className="space-y-3.5">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] text-[var(--ph-text-secondary)]">
+                  {getIcon(item.category)}
                 </div>
-
                 <div className="min-w-0 flex-1">
                   <p className="text-xs leading-relaxed text-[var(--ph-text-secondary)]">
                     <span className="font-medium text-[var(--ph-text-primary)]">{item.actor}</span>{' '}
                     {item.action}{' '}
                     <span className="font-medium text-[var(--ph-text-primary)]">{item.target}</span>
                   </p>
-                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--ph-text-muted)]">
-                    <span>{item.context}</span>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-mono">{item.timestamp}</span>
-                  </div>
+                  <p className="mt-0.5 text-[11px] text-[var(--ph-text-muted)]">
+                    {item.context} · {item.timestamp}
+                  </p>
                 </div>
               </div>
-            );
-          })
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

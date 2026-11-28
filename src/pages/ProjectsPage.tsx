@@ -1,184 +1,322 @@
 import React, { useMemo, useState } from 'react';
-import { FolderKanban, GitBranch, Info, Plus, Search } from 'lucide-react';
-import { SAMPLE_PROJECTS } from '../features/projects/sampleProjects';
-import type { ProjectStatus } from '../types/database';
-import type { SampleProject } from '../types/domain';
-import { cn } from '../lib/utils';
-import { formatPercentage, formatShortDate } from '../utils/formatters';
-import { ProjectPreviewDialog } from '../components/projects/ProjectPreviewDialog';
+import { Link } from 'react-router-dom';
+import {
+  Calendar,
+  Edit3,
+  FolderKanban,
+  GitBranch,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
+import type { PriorityLevel, ProjectStatus } from '../types/database';
+import type { WorkspaceProject } from '../types/domain';
+import { formatShortDate } from '../lib/date';
+import { PRIORITY_META, PROJECT_STATUS_META } from '../lib/statusMeta';
+import { useWorkspace } from '../features/workspace/WorkspaceContext';
+import { ProjectFormDialog } from '../components/projects/ProjectFormDialog';
+import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../components/ui/Dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../components/ui/DropdownMenu';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Input';
-
-type FilterValue = 'all' | ProjectStatus;
-
-const FILTERS: { value: FilterValue; label: string }[] = [
-  { value: 'all', label: 'All Projects' },
-  { value: 'active', label: 'Active' },
-  { value: 'planning', label: 'Planning' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'on_hold', label: 'On Hold' },
-];
-
-const STATUS_META: Record<ProjectStatus, { label: string; className: string }> = {
-  active: { label: 'Active', className: 'text-emerald-600 dark:text-emerald-400' },
-  planning: { label: 'Planning', className: 'text-[var(--ph-text-secondary)]' },
-  on_hold: { label: 'On Hold', className: 'text-amber-600 dark:text-amber-400' },
-  completed: { label: 'Completed', className: 'text-emerald-700 dark:text-emerald-300' },
-  archived: { label: 'Archived', className: 'text-[var(--ph-text-muted)]' },
-};
+import { Select } from '../components/ui/Select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/Table';
+import { useToast } from '../components/ui/ToastProvider';
 
 export const ProjectsPage: React.FC = () => {
-  const [filter, setFilter] = useState<FilterValue>('all');
-  const [search, setSearch] = useState('');
-  const [phaseNoticeOpen, setPhaseNoticeOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<SampleProject | null>(null);
+  const { projects, tasks, getProjectProgress, deleteProject } = useWorkspace();
+  const { toast } = useToast();
 
-  const filtered = useMemo(() => {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | ProjectStatus>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | PriorityLevel>('all');
+  const [sortBy, setSortBy] = useState<'targetDate' | 'name' | 'progress'>('targetDate');
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<WorkspaceProject | null>(null);
+
+  const filteredProjects = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return SAMPLE_PROJECTS.filter((project) => {
-      const matchesFilter = filter === 'all' || project.status === filter;
-      const matchesSearch =
-        !q ||
-        project.name.toLowerCase().includes(q) ||
-        project.category.toLowerCase().includes(q) ||
-        project.summary.toLowerCase().includes(q);
-      return matchesFilter && matchesSearch;
+    return projects
+      .filter((p) => {
+        if (statusFilter !== 'all' && p.status !== statusFilter) return false;
+        if (priorityFilter !== 'all' && p.priority !== priorityFilter) return false;
+        if (
+          q &&
+          !p.name.toLowerCase().includes(q) &&
+          !p.description.toLowerCase().includes(q) &&
+          !p.category.toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'progress') {
+          return getProjectProgress(b.id) - getProjectProgress(a.id);
+        }
+        return a.targetDate.localeCompare(b.targetDate);
+      });
+  }, [projects, search, statusFilter, priorityFilter, sortBy, getProjectProgress]);
+
+  const handleCreate = () => {
+    setEditingProject(null);
+    setDialogOpen(true);
+  };
+
+  const handleEdit = (project: WorkspaceProject) => {
+    setEditingProject(project);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = (project: WorkspaceProject) => {
+    deleteProject(project.id);
+    toast({
+      title: 'Project deleted',
+      description: `${project.name} was removed from your workspace.`,
+      variant: 'default',
     });
-  }, [filter, search]);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header Toolbar */}
-      <div className="flex flex-col gap-4 border-b border-[var(--ph-border)] pb-5 sm:flex-row sm:items-center sm:justify-between">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="font-display text-xl font-semibold text-[var(--ph-text-primary)]">
-            Projects Directory
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--ph-text-primary)]">
+            My Projects
           </h2>
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--ph-text-secondary)]">
-            <Info className="h-3.5 w-3.5 text-[var(--ph-accent)] shrink-0" />
-            <span>
-              Sample preview records · Click any card to inspect linked tasks (Supabase CRUD in Phase 2)
-            </span>
+          <p className="mt-1 text-sm text-[var(--ph-text-secondary)]">
+            {projects.length} project{projects.length === 1 ? '' : 's'} with deadlines, task progress, and linked repositories.
           </p>
         </div>
 
-        <Button size="sm" onClick={() => setPhaseNoticeOpen(true)}>
-          <Plus className="h-4 w-4" />
+        <Button size="sm" onClick={handleCreate}>
+          <Plus className="h-3.5 w-3.5" />
           <span>New Project</span>
         </Button>
       </div>
 
-      {/* Filters + Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-1">
-          {FILTERS.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setFilter(item.value)}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer',
-                filter === item.value
-                  ? 'bg-[var(--ph-bg-elevated)] text-[var(--ph-text-primary)]'
-                  : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative w-full sm:w-64">
+      {/* Controls Toolbar */}
+      <div className="flex flex-col gap-3 rounded-lg border border-[var(--ph-border)] bg-[var(--ph-bg-card)] p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative flex-1 max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ph-text-muted)]" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter sample projects..."
-            className="pl-8 text-xs"
+            placeholder="Filter by name, category, or description..."
+            className="pl-8"
           />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-36">
+            <Select
+              aria-label="Filter by status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | ProjectStatus)}
+            >
+              <option value="all">All statuses</option>
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="on_hold">On Hold</option>
+              <option value="completed">Completed</option>
+              <option value="archived">Archived</option>
+            </Select>
+          </div>
+
+          <div className="w-36">
+            <Select
+              aria-label="Filter by priority"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value as 'all' | PriorityLevel)}
+            >
+              <option value="all">All priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </Select>
+          </div>
+
+          <div className="w-36">
+            <Select
+              aria-label="Sort projects"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'targetDate' | 'name' | 'progress')}
+            >
+              <option value="targetDate">Sort: Deadline</option>
+              <option value="progress">Sort: Progress</option>
+              <option value="name">Sort: Name</option>
+            </Select>
+          </div>
+
+          <div className="inline-flex rounded-md border border-[var(--ph-border)] bg-[var(--ph-bg-secondary)] p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              aria-label="Grid view"
+              className={`rounded-sm p-1.5 transition-colors cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                  : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              aria-label="List view"
+              className={`rounded-sm p-1.5 transition-colors cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-[var(--ph-bg-card)] text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-sm)]'
+                  : 'text-[var(--ph-text-secondary)] hover:text-[var(--ph-text-primary)]'
+              }`}
+            >
+              <List className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Grid or Empty State */}
-      {filtered.length === 0 ? (
+      {/* Content */}
+      {filteredProjects.length === 0 ? (
         <EmptyState
           icon={<FolderKanban className="h-5 w-5" />}
-          title="No matching sample projects"
-          description="Try clearing the search query or switching to a different status filter."
+          title={projects.length === 0 ? 'No projects created yet' : 'No matching projects'}
+          description={
+            projects.length === 0
+              ? 'Create your first project to track tasks, deadlines, notes, and repository links.'
+              : 'Adjust your search query or filters to view your projects.'
+          }
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFilter('all');
-                setSearch('');
-              }}
-            >
-              Reset Filters
-            </Button>
+            projects.length === 0 ? (
+              <Button size="sm" onClick={handleCreate}>
+                <Plus className="h-3.5 w-3.5" />
+                Create project
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                  setPriorityFilter('all');
+                }}
+              >
+                Reset filters
+              </Button>
+            )
           }
         />
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((project) => {
-            const pct = formatPercentage(project.tasksCompleted, project.tasksTotal);
-            const status = STATUS_META[project.status];
+          {filteredProjects.map((project) => {
+            const progress = getProjectProgress(project.id);
+            const statusMeta = PROJECT_STATUS_META[project.status];
+            const priorityMeta = PRIORITY_META[project.priority];
+            const projectTasks = tasks.filter((t) => t.projectId === project.id);
+            const doneCount = projectTasks.filter((t) => t.status === 'completed').length;
+
             return (
-              <Card
-                key={project.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedProject(project)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setSelectedProject(project);
-                  }
-                }}
-                className="flex flex-col justify-between p-5 cursor-pointer hover:border-[var(--ph-border-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)]"
-              >
+              <Card key={project.id} className="flex flex-col justify-between p-5 hover:border-[var(--ph-border-hover)]">
                 <div>
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="font-display text-base font-semibold text-[var(--ph-text-primary)]">
-                      {project.name}
-                    </h3>
-                    <span className={cn('text-xs font-medium shrink-0', status.className)}>
-                      {status.label}
-                    </span>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                      <Badge variant={priorityMeta.variant}>{priorityMeta.label}</Badge>
+                    </div>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={`Actions for ${project.name}`}
+                          className="rounded-md p-1 text-[var(--ph-text-muted)] hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] cursor-pointer"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleEdit(project)}>
+                          <Edit3 className="h-3.5 w-3.5" />
+                          <span>Edit project</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => handleDelete(project)}
+                          className="text-[var(--ph-error)]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span>Delete project</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
-                  <p className="mt-2 text-xs leading-relaxed text-[var(--ph-text-secondary)]">
-                    {project.summary}
+                  <Link
+                    to={`/projects/${project.id}`}
+                    className="mt-3 block text-base font-semibold tracking-tight text-[var(--ph-text-primary)] hover:text-[var(--ph-accent-text)] transition-colors"
+                  >
+                    {project.name}
+                  </Link>
+                  <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[var(--ph-text-secondary)]">
+                    {project.description || 'No project description provided.'}
                   </p>
                 </div>
 
-                <div className="mt-5 space-y-3 border-t border-[var(--ph-border)] pt-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--ph-text-muted)]">Completion</span>
-                    <span className="font-mono font-medium text-[var(--ph-text-primary)] tabular-nums">
-                      {project.tasksCompleted}/{project.tasksTotal} · {pct}%
-                    </span>
+                <div className="mt-5 space-y-3 pt-4 border-t border-[var(--ph-border)]">
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between text-xs">
+                      <span className="text-[var(--ph-text-secondary)]">
+                        {doneCount}/{projectTasks.length} tasks completed
+                      </span>
+                      <span className="font-mono font-medium text-[var(--ph-text-primary)] tabular-nums">
+                        {progress}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
+                      <div
+                        className="h-full rounded-full bg-[var(--ph-accent)] transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
                   </div>
 
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ph-bg-elevated)]">
-                    <div
-                      className="h-full rounded-full bg-[var(--ph-accent)]"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--ph-text-muted)]">
-                    <span>
-                      {project.category} · Due {formatShortDate(project.targetDate)}
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--ph-text-secondary)]">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3 w-3 text-[var(--ph-text-muted)]" />
+                      {formatShortDate(project.targetDate)}
                     </span>
-                    {project.githubRepo && (
-                      <span className="inline-flex items-center gap-1 font-mono text-[11px]">
-                        <GitBranch className="h-3 w-3" />
+                    {project.githubRepo ? (
+                      <span className="inline-flex items-center gap-1 truncate font-mono text-[11px] text-[var(--ph-text-muted)]">
+                        <GitBranch className="h-3 w-3 shrink-0" />
                         {project.githubRepo}
                       </span>
+                    ) : (
+                      <span className="text-[var(--ph-text-muted)]">{project.category}</span>
                     )}
                   </div>
                 </div>
@@ -186,29 +324,95 @@ export const ProjectsPage: React.FC = () => {
             );
           })}
         </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Project</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Target Date</TableHead>
+              <TableHead>Repository</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProjects.map((project) => {
+              const progress = getProjectProgress(project.id);
+              const statusMeta = PROJECT_STATUS_META[project.status];
+              const priorityMeta = PRIORITY_META[project.priority];
+
+              return (
+                <TableRow key={project.id}>
+                  <TableCell>
+                    <Link
+                      to={`/projects/${project.id}`}
+                      className="font-medium text-[var(--ph-text-primary)] hover:text-[var(--ph-accent-text)] transition-colors"
+                    >
+                      {project.name}
+                    </Link>
+                    <p className="text-[11px] text-[var(--ph-text-muted)]">{project.category}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={statusMeta.variant}>{statusMeta.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={priorityMeta.variant}>{priorityMeta.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5 w-32">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--ph-bg-secondary)]">
+                        <div
+                          className="h-full rounded-full bg-[var(--ph-accent)]"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <span className="font-mono text-xs tabular-nums text-[var(--ph-text-secondary)]">
+                        {progress}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--ph-text-secondary)]">
+                    {formatShortDate(project.targetDate)}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-[var(--ph-text-muted)]">
+                    {project.githubRepo || '—'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="inline-flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit ${project.name}`}
+                        onClick={() => handleEdit(project)}
+                        className="h-8 w-8"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${project.name}`}
+                        onClick={() => handleDelete(project)}
+                        className="h-8 w-8 hover:text-[var(--ph-error)]"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
-      <ProjectPreviewDialog
-        project={selectedProject}
-        onOpenChange={(open) => !open && setSelectedProject(null)}
+      <ProjectFormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        project={editingProject}
       />
-
-      <Dialog open={phaseNoticeOpen} onOpenChange={setPhaseNoticeOpen}>
-        <DialogContent>
-          <DialogTitle>Project Creation Planned for Phase 2</DialogTitle>
-          <DialogDescription>
-            In Phase 1, the <code className="font-mono text-xs">projects</code> table and RLS
-            policies have been prepared in <code className="font-mono text-xs">supabase/migrations/</code>.
-            Live project creation and database persistence will be wired in Phase 2 once Supabase
-            credentials are connected.
-          </DialogDescription>
-          <div className="mt-5 flex justify-end">
-            <Button variant="secondary" size="sm" onClick={() => setPhaseNoticeOpen(false)}>
-              Got it
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -15,7 +15,7 @@ export const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/75 backdrop-blur-[2px] transition-opacity',
+      'fixed inset-0 z-50 bg-[#15131C]/50 backdrop-blur-[2px] transition-opacity',
       className
     )}
     {...props}
@@ -32,7 +32,7 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-[var(--ph-border)] bg-[var(--ph-bg-surface)] p-6 text-[var(--ph-text-primary)] shadow-2xl focus:outline-none',
+        'fixed left-1/2 top-1/2 z-50 max-h-[88vh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-[var(--ph-border)] bg-[var(--ph-bg-card)] p-6 text-[var(--ph-text-primary)] shadow-[var(--ph-shadow-md)] focus:outline-none',
         className
       )}
       {...props}
@@ -40,7 +40,7 @@ export const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close
         aria-label="Close dialog"
-        className="absolute right-4 top-4 rounded-md p-1.5 text-[var(--ph-text-secondary)] transition-colors hover:bg-[var(--ph-bg-elevated)] hover:text-[var(--ph-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)]"
+        className="absolute right-4 top-4 rounded-md p-1.5 text-[var(--ph-text-secondary)] transition-colors hover:bg-[var(--ph-bg-secondary)] hover:text-[var(--ph-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ph-accent)] cursor-pointer"
       >
         <X className="h-4 w-4" />
       </DialogPrimitive.Close>
@@ -55,7 +55,7 @@ export const DialogTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
-    className={cn('font-display text-base font-semibold text-[var(--ph-text-primary)]', className)}
+    className={cn('text-base font-semibold tracking-tight text-[var(--ph-text-primary)]', className)}
     {...props}
   />
 ));
@@ -67,7 +67,7 @@ export const DialogDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('mt-1 text-sm text-[var(--ph-text-secondary)]', className)}
+    className={cn('mt-1 text-xs leading-relaxed text-[var(--ph-text-secondary)]', className)}
     {...props}
   />
 ));
